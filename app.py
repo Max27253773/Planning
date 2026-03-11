@@ -23,7 +23,7 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
-# --- STYLE CSS ---
+# --- STYLE CSS (Français & Contrasté) ---
 st.markdown("""
     <style>
     .slot-container { display: flex !important; flex-direction: row !important; gap: 2px !important; width: 100% !important; height: 100%; }
@@ -59,7 +59,7 @@ def load_data():
     try:
         url = f"{SHEET_CSV_URL}&v={time.time()}"
         data = pd.read_csv(url)
-        # Formatage français pour la lecture CSV
+        # Formatage européen impératif pour Google Sheets
         data['Date_DT'] = pd.to_datetime(data['Date'], dayfirst=True, errors='coerce')
         return data.dropna(subset=['Date_DT', 'Horaire'])
     except: return pd.DataFrame()
@@ -103,7 +103,7 @@ if menu == "📅 Planning Hebdomadaire":
                     grid_class = "grid-line-hour" if is_pile else "grid-line-min"
                     st.markdown(f"<div class='{grid_class}'></div>", unsafe_allow_html=True)
 
-# --- 2. STATISTIQUES (VERROUILLÉES) ---
+# --- 2. STATISTIQUES ---
 elif menu == "📊 Statistiques":
     st.title("📊 Statistiques d'Utilisation")
     if not df.empty:
@@ -118,7 +118,7 @@ elif menu == "📊 Statistiques":
         st.subheader("Historique Complet")
         st.dataframe(df.drop(columns=['Date_DT']), use_container_width=True)
 
-# --- 3. ADMINISTRATION (VERROUILLÉE) ---
+# --- 3. ADMINISTRATION ---
 elif menu == "🔐 Administration":
     st.title("⚙️ Gestion des Réservations")
     pwd = st.sidebar.text_input("Mot de passe", type="password")
@@ -130,10 +130,12 @@ elif menu == "🔐 Administration":
         
         with tab1:
             with st.form("form_add", clear_on_submit=True):
-                d, eq, hr = st.date_input("Date"), st.text_input("Équipage"), st.text_input("Horaire (ex: 08h30 - 12h00)")
+                # Formatage JJ/MM/AAAA imposé ici
+                d = st.date_input("Date", format="DD/MM/YYYY")
+                eq = st.text_input("Équipage")
+                hr = st.text_input("Horaire (ex: 08h30 - 12h00)")
                 sm = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("Ajouter au planning"):
-                    # Envoi de la date au format français DD/MM/YYYY
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
                     st.success("Réservation ajoutée !"); time.sleep(1); st.rerun()
         
@@ -141,7 +143,10 @@ elif menu == "🔐 Administration":
             if not df.empty:
                 idx = st.selectbox("Sélectionner la ligne à modifier", df.index, format_func=format_resa)
                 with st.form("form_edit"):
-                    ed, ee, eh = st.date_input("Date", df.loc[idx,'Date_DT']), st.text_input("Équipage", df.loc[idx,'Equipage']), st.text_input("Horaire", df.loc[idx,'Horaire'])
+                    # Formatage JJ/MM/AAAA imposé ici
+                    ed = st.date_input("Date", value=df.loc[idx,'Date_DT'], format="DD/MM/YYYY")
+                    ee = st.text_input("Équipage", df.loc[idx,'Equipage'])
+                    eh = st.text_input("Horaire", df.loc[idx,'Horaire'])
                     es = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx,'Simu']).strip()) if str(df.loc[idx,'Simu']).strip() in SIMU_CONFIG else 0)
                     if st.form_submit_button("Mettre à jour"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
@@ -152,10 +157,10 @@ elif menu == "🔐 Administration":
                 target = st.selectbox("Sélectionner la ligne à supprimer", df.index, format_func=format_resa)
                 if st.button("❌ Supprimer la réservation"): st.session_state['confirm_del'] = True
                 if st.session_state.get('confirm_del'):
-                    st.warning(f"Voulez-vous vraiment supprimer cette réservation ?")
+                    st.warning(f"Confirmer la suppression ?")
                     if st.button("✅ OUI, CONFIRMER"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(target)+2}))
                         st.session_state['confirm_del'] = False
                         st.success("Réservation supprimée !"); time.sleep(1); st.rerun()
     else: 
-        st.error("Veuillez saisir le mot de passe pour accéder à la gestion.")
+        st.error("Accès restreint aux administrateurs.")
