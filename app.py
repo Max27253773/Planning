@@ -29,7 +29,7 @@ SIMU_CONFIG = {
 
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
-st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
+st.set_page_config(page_title="⚓ Planning", layout="wide")
 
 # --- LOGIQUE DONNÉES ---
 def extraire_heures(horaire_str):
