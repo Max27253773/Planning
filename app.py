@@ -42,30 +42,26 @@ st.markdown("""
     }
     .time-col-full { font-size: 15px; font-weight: 900; color: #003366; text-align: right; padding-right: 15px; border-right: 4px solid #003366; height: 46px; display: flex; align-items: center; justify-content: flex-end; }
     .time-col-half { font-size: 12px; font-style: italic; font-weight: 400; color: #78909C; text-align: right; padding-right: 15px; border-right: 4px solid #CFD8DC; height: 46px; display: flex; align-items: center; justify-content: flex-end; }
-    .grid-line-hour { border-bottom: 2px solid #B0BEC5; height: 46px; background-color: white; }
-    .grid-line-min { border-bottom: 1px dashed #ECEFF1; height: 46px; background-color: white; }
     
-    /* Mise en avant du bouton de téléchargement dans la sidebar */
+    /* Grille sans fond blanc forcé */
+    .grid-line-hour { border-bottom: 2px solid #B0BEC5; height: 46px; }
+    .grid-line-min { border-bottom: 1px dashed #CFD8DC; height: 46px; }
+    
+    /* Bouton de téléchargement sidebar */
     div.stDownloadButton > button {
         background-color: #003366 !important;
         color: white !important;
-        border: 2px solid #001f3f !important;
-        padding: 0.6rem 1rem !important;
+        border: none !important;
+        padding: 0.7rem !important;
         border-radius: 8px !important;
         width: 100%;
         font-weight: bold !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-    }
-    div.stDownloadButton > button:hover {
-        background-color: #00509d !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0,0,0,0.15) !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.15) !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LOGIQUE ---
+# --- FONCTIONS ---
 def extraire_heures(horaire_str):
     try:
         nums = re.findall(r'(\d+)', str(horaire_str))
@@ -85,8 +81,8 @@ def load_data():
         return data.dropna(subset=['Date_DT', 'Horaire'])
     except: return pd.DataFrame()
 
-# --- GÉNÉRATEUR D'IMAGE ---
 def generer_image_planning(df_view, week_days, simu_name):
+    # L'image générée reste sur fond blanc pour être imprimable proprement
     W, H = 1000, 1100
     img = Image.new('RGB', (W, H), color='#FFFFFF')
     draw = ImageDraw.Draw(img)
@@ -117,9 +113,8 @@ def generer_image_planning(df_view, week_days, simu_name):
     img.save(img_byte_arr, format='PNG')
     return img_byte_arr.getvalue()
 
-# --- INTERFACE SIDEBAR ---
+# --- SIDEBAR ---
 df = load_data()
-# Changement : "Planning" au lieu de "Planning Hebdomadaire"
 menu = st.sidebar.radio("MENU", ["📅 Planning", "📊 Statistiques", "🔐 Administration"])
 
 st.sidebar.divider()
@@ -132,9 +127,7 @@ monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).w
 week_days = [monday + timedelta(days=i) for i in range(5)]
 df_view = df[df['Simu'].str.strip().str.upper() == simu_sel.upper()]
 
-# Bouton de téléchargement mis en avant dans la sidebar
 st.sidebar.divider()
-st.sidebar.write("💾 **Action Rapide**")
 img_bin = generer_image_planning(df_view, week_days, simu_sel)
 st.sidebar.download_button(
     label="📸 Télécharger le planning",
@@ -143,10 +136,10 @@ st.sidebar.download_button(
     mime="image/png"
 )
 
-# --- CORPS DE PAGE ---
+# --- CONTENU ---
 if menu == "📅 Planning":
     st.markdown(f"<h1 style='text-align: center; color: #003366;'>⚓ {simu_sel}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center; color: #607D8B;'>Semaine {semaine_sel} - {annee_sel}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #607D8B; margin-top:-15px;'>Semaine {semaine_sel} - {annee_sel}</p>", unsafe_allow_html=True)
     
     cols = st.columns([0.6] + [1]*5)
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
@@ -170,16 +163,17 @@ if menu == "📅 Planning":
                     if h_deb == h_act:
                         hauteur_px = int((h_fin - h_deb) * 2 * 46) - 4 
                         html_bloc += f'<div class="calendar-cell-unique" style="background-color:{color_active}; height:{hauteur_px}px;">{r["Equipage"]}</div>'
-                st.markdown(f"<div class='slot-wrapper'><div class='{'grid-line-hour' if is_pile else 'grid-line-min'}'></div>{html_bloc}</div>", unsafe_allow_html=True)
+                
+                grid_style = "grid-line-hour" if is_pile else "grid-line-min"
+                st.markdown(f"<div class='slot-wrapper'><div class='{grid_style}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
 elif menu == "📊 Statistiques":
     st.title("📊 Statistiques")
     if not df.empty:
         st.bar_chart(df['Simu'].value_counts())
-        st.dataframe(df.drop(columns=['Date_DT']), use_container_width=True)
 
 elif menu == "🔐 Administration":
-    st.title("⚙️ Gestion des Réservations")
+    st.title("⚙️ Gestion")
     pwd = st.sidebar.text_input("Mot de passe", type="password")
     if pwd == ADMIN_PASSWORD:
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
@@ -187,26 +181,8 @@ elif menu == "🔐 Administration":
             with st.form("a", clear_on_submit=True):
                 d = st.date_input("Date")
                 eq = st.text_input("Équipage")
-                hr = st.text_input("Horaire (ex: 08:30 - 12:00)")
+                hr = st.text_input("Horaire")
                 sm = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("VALIDER"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
                     st.rerun()
-        with tab2:
-            if not df.empty:
-                idx = st.selectbox("Sélectionner la ligne", df.index, format_func=lambda x: f"{df.loc[x,'Date']} - {df.loc[x,'Equipage']}")
-                with st.form("e"):
-                    ed = st.date_input("Date", value=df.loc[idx,'Date_DT'])
-                    ee = st.text_input("Équipage", df.loc[idx,'Equipage'])
-                    eh = st.text_input("Horaire", df.loc[idx,'Horaire'])
-                    es = st.selectbox("Simu", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx,'Simu']).strip()) if str(df.loc[idx,'Simu']).strip() in SIMU_CONFIG else 0)
-                    if st.form_submit_button("MODIFIER"):
-                        requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
-                        st.rerun()
-        with tab3:
-            if not df.empty:
-                t = st.selectbox("Ligne à supprimer", df.index, format_func=lambda x: f"{df.loc[x,'Date']} - {df.loc[x,'Equipage']}")
-                if st.button("❌ Supprimer définitivement"):
-                    requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
-                    st.rerun()
-    else: st.info("Veuillez entrer le mot de passe dans la barre latérale.")
