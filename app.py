@@ -16,6 +16,9 @@ def load_data():
     try:
         url_force = f"{SHEET_CSV_URL}&v={time.time()}"
         data = pd.read_csv(url_force)
+        # Nettoyage et tri par date
+        data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
+        data = data.sort_values(by='Date', ascending=True)
         return data
     except:
         return pd.DataFrame(columns=["Date", "Equipage", "Horaire", "Simu"])
@@ -30,7 +33,8 @@ if menu == "Consulter le Planning":
         st.info("Le planning est vide.")
     else:
         for _, row in df.iterrows():
-            with st.expander(f"📅 {row['Date']} — {row['Equipage']}"):
+            d_fmt = row['Date'].strftime('%d/%m/%Y') if pd.notnull(row['Date']) else "Date ?"
+            with st.expander(f"📅 {d_fmt} — {row['Equipage']}"):
                 st.write(f"**⏰ Horaire :** {row['Horaire']} | **🖥️ Simu :** {row['Simu']}")
 
 elif menu == "Administration 🔐":
@@ -38,6 +42,7 @@ elif menu == "Administration 🔐":
     if pwd == "1234":
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
 
+        # --- ONGLET AJOUTER ---
         with tab1:
             with st.form("add_form", clear_on_submit=True):
                 d, e, h = st.date_input("Date"), st.text_input("Equipage"), st.text_input("Horaire")
@@ -45,33 +50,55 @@ elif menu == "Administration 🔐":
                 if st.form_submit_button("Valider l'ajout"):
                     payload = {"action": "add", "date": str(d), "equipage": e, "horaire": h, "simu": s}
                     requests.post(SCRIPT_URL, data=json.dumps(payload))
-                    st.success("✅ Ajouté ! Actualisez le planning.")
+                    st.success("✅ Séance ajoutée !")
                     st.cache_data.clear()
 
+        # --- ONGLET MODIFIER ---
         with tab2:
             if not df.empty:
-                liste = [f"{row['Date']} - {row['Equipage']}" for _, row in df.iterrows()]
-                choix = st.selectbox("Sélectionner la séance à modifier", options=liste)
-                row_sel = df.iloc[liste.index(choix)]
+                # Création d'un label ultra-précis pour ne pas se tromper
+                df['label'] = df['Date'].dt.strftime('%d/%m/%Y') + " - " + df['Equipage'].astype(str) + " (" + df['Horaire'].astype(str) + ")"
+                choix = st.selectbox("Quelle séance modifier ?", options=df['label'].tolist())
+                row_sel = df[df['label'] == choix].iloc[0]
+
                 with st.form("edit_form"):
-                    new_d = st.date_input("Nouvelle Date", value=pd.to_datetime(row_sel['Date']) if pd.notnull(row_sel['Date']) else None)
+                    new_d = st.date_input("Nouvelle Date", value=row_sel['Date'])
                     new_e = st.text_input("Nouvel Equipage", value=row_sel['Equipage'])
                     new_h = st.text_input("Nouvel Horaire", value=row_sel['Horaire'])
-                    new_s = st.selectbox("Nouveau Simu", ["SIM 1", "SIM 2", "SIM 3"], index=0)
-                    if st.form_submit_button("Mettre à jour"):
-                        payload = {"action": "edit", "old_equipage": str(row_sel['Equipage']), "new_date": str(new_d), "new_equipage": new_e, "new_horaire": new_h, "new_simu": new_s}
+                    new_s = st.selectbox("Nouveau Simu", ["SIM 1", "SIM 2", "SIM 3"], 
+                                       index=["SIM 1", "SIM 2", "SIM 3"].index(row_sel['Simu']) if row_sel['Simu'] in ["SIM 1", "SIM 2", "SIM 3"] else 0)
+                    
+                    if st.form_submit_button("Enregistrer les modifications"):
+                        payload = {
+                            "action": "edit", 
+                            "old_date": str(row_sel['Date'].date()),
+                            "old_equipage": str(row_sel['Equipage']), 
+                            "new_date": str(new_d), 
+                            "new_equipage": new_e, 
+                            "new_horaire": new_h, 
+                            "new_simu": new_s
+                        }
                         requests.post(SCRIPT_URL, data=json.dumps(payload))
-                        st.success("📝 Modifié !")
+                        st.success("📝 Mise à jour effectuée !")
                         st.cache_data.clear()
+            else:
+                st.info("Rien à modifier.")
 
+        # --- ONGLET SUPPRIMER ---
         with tab3:
             if not df.empty:
-                liste_del = [f"{row['Equipage']}" for _, row in df.iterrows()]
-                choix_del = st.selectbox("Sélectionner l'équipage à supprimer", options=liste_del)
+                df['label_del'] = df['Date'].dt.strftime('%d/%m/%Y') + " - " + df['Equipage'].astype(str) + " (" + df['Horaire'].astype(str) + ")"
+                choix_del = st.selectbox("Quelle séance supprimer ?", options=df['label_del'].tolist())
+                row_del = df[df['label_del'] == choix_del].iloc[0]
+                
                 if st.button("🗑️ Supprimer définitivement"):
-                    payload = {"action": "delete", "equipage": choix_del}
+                    payload = {
+                        "action": "delete", 
+                        "date": str(row_del['Date'].date()),
+                        "equipage": str(row_del['Equipage'])
+                    }
                     requests.post(SCRIPT_URL, data=json.dumps(payload))
-                    st.warning(f"Séance de {choix_del} supprimée.")
+                    st.warning(f"Séance du {row_del['Date'].strftime('%d/%m/%Y')} supprimée.")
                     st.cache_data.clear()
                     time.sleep(1)
                     st.rerun()
