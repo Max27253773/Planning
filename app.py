@@ -123,7 +123,6 @@ elif menu == "🔐 Administration":
     
     if pwd == ADMIN_PASSWORD:
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
-        
         def format_resa(idx):
             r = df.loc[idx]
             return f"{r['Date']} | {r['Horaire']} | {r['Simu']} | {r['Equipage']}"
