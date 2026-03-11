@@ -8,16 +8,24 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
-# --- CONFIGURATION ---
+# --- CONFIGURATION (COULEURS MISES À JOUR) ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
 
+# Association des couleurs par simulateur
 SIMU_CONFIG = {
-    "JUPITER": "#B3E5FC", "MINERVE": "#C8E6C9", "JUNON": "#FFF9C4",        
-    "BACCHUS": "#F8BBD0", "MARS": "#E1BEE7", "SATURNE": "#FFCCBC",
-    "CRONOS": "#D1C4E9", "NEKKAR": "#CFD8DC", "PHOBOS": "#F0F4C3",
-    "PERSEE": "#B2DFDB", "SAGITTAIRE": "#FFE0B2"
+    "JUPITER": "#B3E5FC",    # Bleu
+    "MINERVE": "#F8BBD0",    # Violet-Rose
+    "JUNON": "#FFF9C4",      # Jaune clair
+    "BACCHUS": "#C8E6C9",    # Vert
+    "MARS": "#FFCCBC",       # Orange/Corail
+    "SATURNE": "#D1C4E9",    # Mauve
+    "CRONOS": "#CFD8DC",     # Gris-Bleu
+    "NEKKAR": "#B2DFDB",     # Turquoise
+    "PHOBOS": "#F0F4C3",     # Lime
+    "PERSEE": "#FFE0B2",     # Ambre
+    "SAGITTAIRE": "#E1BEE7"  # Lavande
 }
 
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
@@ -77,7 +85,7 @@ def generer_image_planning(df_view, week_days, simu_name):
     img = Image.new('RGB', (W, H), color='white')
     draw = ImageDraw.Draw(img)
     navy, gray = (0, 51, 102), (200, 200, 200)
-    bg_simu = SIMU_CONFIG.get(simu_name.upper(), "#B3E5FC")
+    bg_simu = SIMU_CONFIG.get(simu_name.upper(), "#EEEEEE")
     draw.rectangle([0, 0, W, 80], fill=navy)
     draw.text((W//2 - 100, 25), f"PLANNING : {simu_name}", fill='white')
     col_w, row_h = (W - 100) // 5, (H - 120) // len(QUARTS_HEURES)
@@ -127,7 +135,10 @@ if menu == "📅 Planning":
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     for i, d in enumerate(week_days):
         cols[i+1].markdown(f"<div class='day-header'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
+    
+    # Récupération de la couleur spécifique du simulateur
     color_active = SIMU_CONFIG.get(simu_sel, "#EEEEEE")
+    
     for q in QUARTS_HEURES:
         if q == "20:30": continue
         row_cols = st.columns([0.6] + [1]*5)
@@ -168,7 +179,7 @@ elif menu == "🔐 Administration":
                 sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
-                    st.success("✅ Ajouté !")
+                    st.success("✅ Ajouté avec succès !")
                     time.sleep(1)
                     st.rerun()
         with tab2:
@@ -189,12 +200,9 @@ elif menu == "🔐 Administration":
                         st.rerun()
         with tab3:
             if not df.empty:
-                t = st.selectbox("Sélectionner la ligne", df.index, format_func=format_resa)
-                
-                # --- LA CASE DE CONFIRMATION EST ICI ---
-                confirm = st.checkbox("⚠️ Je confirme vouloir supprimer définitivement cette ligne")
-                
-                if st.button("🗑️ Supprimer la ligne sélectionnée", disabled=not confirm):
+                t = st.selectbox("Ligne à supprimer", df.index, format_func=format_resa)
+                confirm = st.checkbox("⚠️ Je confirme la suppression")
+                if st.button("🗑️ Supprimer", disabled=not confirm):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
                     st.success("🗑️ Supprimé !")
                     time.sleep(1)
