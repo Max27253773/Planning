@@ -151,7 +151,7 @@ if menu == "📅 Planning":
                 st.markdown(f"<div class='slot-wrapper'><div class='{'grid-line-hour' if is_pile else 'grid-line-min'}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
 elif menu == "📊 Statistiques":
-    st.markdown("<h1>📊 Bilan Horaire d'Activité</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>📊 Statistiques</h1>", unsafe_allow_html=True)
     if not df.empty:
         def calcul_duree(horaire_str):
             h_deb, h_fin = extraire_heures(horaire_str)
