@@ -24,7 +24,7 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
-# --- STYLE CSS (PLANNING UNIQUEMENT) ---
+# --- STYLE CSS ---
 st.markdown("""
     <style>
     .slot-wrapper { position: relative; width: 100%; height: 45px; }
@@ -159,6 +159,7 @@ elif menu == "🔐 Administration":
         def format_resa(idx):
             r = df.loc[idx]
             return f"{r['Date']} | {r['Horaire']} | {r['Simu']} | {r['Equipage']}"
+        
         with tab1:
             with st.form("a", clear_on_submit=True):
                 d = st.date_input("Date")
@@ -167,6 +168,8 @@ elif menu == "🔐 Administration":
                 sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
+                    st.success("✅ Réservation ajoutée avec succès !")
+                    time.sleep(1)
                     st.rerun()
         with tab2:
             if not df.empty:
@@ -181,10 +184,14 @@ elif menu == "🔐 Administration":
                     es = st.selectbox("Simu", simu_list, index=default_idx)
                     if st.form_submit_button("Modifier"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
+                        st.success("📝 Réservation modifiée !")
+                        time.sleep(1)
                         st.rerun()
         with tab3:
             if not df.empty:
-                t = st.selectbox("Supprimer", df.index, format_func=format_resa)
-                if st.button("❌ Confirmer la suppression"):
+                t = st.selectbox("Sélectionner la ligne à supprimer", df.index, format_func=format_resa)
+                if st.button("❌ Confirmer la suppression définitive"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
+                    st.success("🗑️ Suppression réussie !")
+                    time.sleep(1)
                     st.rerun()
