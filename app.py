@@ -85,7 +85,6 @@ if menu == "📅 Planning Hebdomadaire":
     for i, d in enumerate(week_days):
         cols[i+1].markdown(f"<div class='day-header'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
-    # Couleur du simulateur sélectionné
     color_active = SIMU_CONFIG.get(simu_sel, "#EEEEEE")
 
     for q in QUARTS_HEURES:
@@ -94,11 +93,12 @@ if menu == "📅 Planning Hebdomadaire":
         is_pile = q.endswith(":00")
         h_actuelle = int(q.split(':')[0]) + int(q.split(':')[1])/60
         
-        row_cols[0].markdown(f<div class='{"time-col-full" if is_pile else "time-col-half"}'>{q}</div>, unsafe_allow_html=True)
+        # CORRECTION DE LA SYNTAXE ICI
+        time_class = "time-col-full" if is_pile else "time-col-half"
+        row_cols[0].markdown(f"<div class='{time_class}'>{q}</div>", unsafe_allow_html=True)
         
         for i, d in enumerate(week_days):
             with row_cols[i+1]:
-                # On filtre les réservations : DATE + SIMULATEUR SÉLECTIONNÉ
                 resas_filtrees = df[
                     (df['Date_DT'].dt.date == d.date()) & 
                     (df['Simu'].str.strip().str.upper() == simu_sel.upper())
