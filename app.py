@@ -8,7 +8,7 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
-# --- CONFIGURATION (COULEURS ET URLS) ---
+# --- CONFIGURATION (URLS & COULEURS) ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
@@ -29,6 +29,7 @@ SIMU_CONFIG = {
 
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
+# Configuration de la page
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
 # --- LOGIQUE DONNÉES ---
@@ -83,21 +84,25 @@ def generer_image_planning(df_view, week_days, simu_name):
     img.save(img_byte_arr, format='PNG')
     return img_byte_arr.getvalue()
 
-# --- INTERFACE ET STYLE DYNAMIQUE ---
+# --- INTERFACE ---
 df = load_data()
 menu = st.sidebar.radio("MENU", ["📅 Planning", "📊 Statistiques", "🔐 Administration"])
 
 st.sidebar.divider()
 annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=datetime.now().isocalendar()[1]-1)
-simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()), key='simu_select')
+simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 
-# Récupération de la couleur du simulateur pour le thème
+# Récupération de la couleur du simulateur
 current_color = SIMU_CONFIG.get(simu_sel, "#003366")
 
+# --- CSS (Injecté ici pour être sûr qu'il écrase tout) ---
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: #F4F7F9; }}
+    /* Forcer le fond gris sur toute l'application */
+    .stApp, [data-testid="stAppViewContainer"] {{
+        background-color: #F4F7F9 !important;
+    }}
     .slot-wrapper {{ position: relative; width: 100%; height: 45px; }}
     .calendar-cell-unique {{ 
         position: absolute; top: 2px; left: 2px; right: 2px;
@@ -129,7 +134,7 @@ df_view = df[df['Simu'].str.strip().str.upper() == simu_sel.upper()]
 
 st.sidebar.divider()
 img_bin = generer_image_planning(df_view, week_days, simu_sel)
-st.sidebar.download_button(label="📸 Télécharger Planning", data=img_bin, file_name=f"Planning_{simu_sel}_S{semaine_sel}.png", mime="image/png")
+st.sidebar.download_button(label="📸 Télécharger Planning", data=img_bin, file_name=f"Planning_{simu_sel}.png", mime="image/png")
 
 if menu == "📅 Planning":
     st.markdown(f"<h1 style='color:{current_color};'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
@@ -179,7 +184,7 @@ elif menu == "🔐 Administration":
                 sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
-                    st.success("✅ Réservation ajoutée !")
+                    st.success("✅ Ajouté !")
                     time.sleep(1)
                     st.rerun()
         with tab2:
@@ -195,7 +200,7 @@ elif menu == "🔐 Administration":
                     es = st.selectbox("Simu", s_list, index=def_idx)
                     if st.form_submit_button("Modifier"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
-                        st.success("📝 Réservation modifiée !")
+                        st.success("📝 Modifié !")
                         time.sleep(1)
                         st.rerun()
         with tab3:
