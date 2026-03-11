@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-import json
 import re
 from datetime import datetime, timedelta
 
@@ -20,64 +19,61 @@ H_DEBUT = 6
 H_FIN = 20
 HAUTEUR_HEURE = 60 
 
-st.set_page_config(page_title="Planning Naval Précis", layout="wide", page_icon="⚓")
+st.set_page_config(page_title="Planning Naval", layout="wide")
 
-# --- STYLE CSS RÉVISÉ ---
+# --- CSS GLOBAL ---
 st.markdown(f"""
     <style>
-    .main-container {{
+    .day-column-container {{
         position: relative;
         width: 100%;
         height: {(H_FIN - H_DEBUT) * HAUTEUR_HEURE}px;
         background-color: white;
-        border: 1px solid #ddd;
-        background-image: linear-gradient(#eee 1px, transparent 1px);
+        border: 1px solid #ccc;
+        background-image: linear-gradient(#f0f0f0 1px, transparent 1px);
         background-size: 100% {HAUTEUR_HEURE}px;
+        margin-bottom: 20px;
     }}
-    .time-label {{
-        height: {HAUTEUR_HEURE}px;
-        line-height: {HAUTEUR_HEURE}px;
-        font-weight: bold;
-        color: #003366;
-        text-align: right;
-        padding-right: 10px;
-        font-size: 13px;
-    }}
-    .resa-block {{
+    .resa-item {{
         position: absolute;
-        left: 2px !important;
-        right: 2px !important;
+        left: 2px;
+        right: 2px;
         border-radius: 4px;
-        border: 1px solid rgba(0,0,0,0.2);
+        border: 2px solid rgba(0,0,0,0.3); /* Bordure plus forte pour test */
         padding: 4px;
         font-size: 11px;
         font-weight: bold;
-        color: #000 !important;
-        z-index: 100; /* Force l'affichage au premier plan */
+        color: black !important;
         overflow: hidden;
+        z-index: 999;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        align-items: center;
-        box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
     }}
-    .day-header {{
+    .time-label-cell {{
+        height: {HAUTEUR_HEURE}px;
+        line-height: {HAUTEUR_HEURE}px;
+        font-weight: bold;
+        text-align: right;
+        padding-right: 10px;
+        color: #003366;
+    }}
+    .header-box {{
         text-align: center;
         background-color: #003366;
         color: white;
         padding: 10px;
         border-radius: 5px;
-        margin-bottom: 2px;
+        margin-bottom: 5px;
         font-weight: bold;
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- FONCTION DE LECTURE ---
 def parse_horaire_precis(h_str):
     if pd.isna(h_str): return None
     try:
-        # Extrait tous les nombres pour gérer 08h30, 8:30, 08-12, etc.
         nums = re.findall(r'(\d+)', str(h_str))
         if len(nums) >= 4:
             h1, m1, h2, m2 = map(int, nums[:4])
@@ -92,10 +88,9 @@ def load_data():
     try:
         url = f"{SHEET_CSV_URL}&v={time.time()}"
         data = pd.read_csv(url)
-        data['Date_DT'] = pd.to_datetime(data['Date'], errors='coerce', dayfirst=True)
+        data['Date_DT'] = pd.to_datetime(data['Date'], dayfirst=True, errors='coerce')
         return data.dropna(subset=['Date_DT', 'Horaire'])
-    except:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
 df = load_data()
 
@@ -108,28 +103,26 @@ with c2:
     curr_w = datetime.now().isocalendar()[1]
     semaine_sel = st.selectbox("Semaine", range(1, 54), index=curr_w-1)
 
-# Calcul des jours
 jan4 = datetime(annee_sel, 1, 4)
 monday = (jan4 - timedelta(days=jan4.weekday())) + timedelta(weeks=semaine_sel-1)
 week_days = [monday + timedelta(days=i) for i in range(5)]
 
-# Affichage des colonnes
 cols = st.columns([0.6] + [1]*5)
 
 # Colonne des heures
 with cols[0]:
-    st.markdown("<div style='margin-top:42px;'>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:55px;'>", unsafe_allow_html=True)
     for h in range(H_DEBUT, H_FIN + 1):
-        st.markdown(f"<div class='time-label'>{h:02d}:00</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='time-label-cell'>{h:02d}:00</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Colonnes des jours
 for i, d in enumerate(week_days):
     with cols[i+1]:
-        st.markdown(f"<div class='day-header'>{d.strftime('%A')}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='header-box'>{d.strftime('%A')}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
         
-        # Le conteneur blanc de la journée
-        st.markdown("<div class='main-container'>", unsafe_allow_html=True)
+        # On prépare TOUT le HTML du jour dans une seule chaîne
+        day_html = "<div class='day-column-container'>"
         
         day_resas = df[df['Date_DT'].dt.date == d.date()]
         
@@ -137,20 +130,17 @@ for i, d in enumerate(week_days):
             heures = parse_horaire_precis(r['Horaire'])
             if heures:
                 h_start, h_end = heures[0], heures[1]
-                
                 if h_end > H_DEBUT and h_start < H_FIN:
-                    # Calcul de la position
                     top = (max(h_start, H_DEBUT) - H_DEBUT) * HAUTEUR_HEURE
                     height = (min(h_end, H_FIN) - max(h_start, H_DEBUT)) * HAUTEUR_HEURE
+                    color = SIMU_CONFIG.get(str(r['Simu']).strip(), "#EEEEEE")
                     
-                    color = SIMU_CONFIG.get(r['Simu'], "#EEEEEE")
-                    
-                    # On injecte le bloc
-                    st.markdown(f"""
-                        <div class="resa-block" style="top: {top}px; height: {height}px; background-color: {color};">
-                            <div style="line-height:1.1;">{r['Equipage']}</div>
-                            <div style="font-size:9px; font-weight:normal; opacity:0.8;">{r['Simu']}</div>
+                    day_html += f"""
+                        <div class="resa-item" style="top: {top}px; height: {height}px; background-color: {color};">
+                            {r['Equipage']}<br><span style='font-size:8px;'>{r['Simu']}</span>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """
         
-        st.markdown("</div>", unsafe_allow_html=True)
+        day_html += "</div>"
+        # Affichage unique par colonne
+        st.markdown(day_html, unsafe_allow_html=True)
