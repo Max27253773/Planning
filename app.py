@@ -11,7 +11,7 @@ SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvq
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
 
-# Mise à jour de la liste des simulateurs avec des couleurs distinctes
+# Liste des simulateurs mise à jour
 SIMU_CONFIG = {
     "JUPITER": "#B3E5FC", 
     "MINERVE": "#C8E6C9",      
@@ -131,11 +131,16 @@ elif menu == "🔐 Administration":
     if pwd == ADMIN_PASSWORD:
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
         
+        # Fonction pour formater l'affichage dans les listes de sélection (Correction demandée)
+        def format_resa(idx):
+            row = df.loc[idx]
+            return f"{row['Date']} | {row['Horaire']} | {row['Simu']} | {row['Equipage']}"
+
         with tab1:
             with st.form("form_add", clear_on_submit=True):
                 d = st.date_input("Date")
                 eq = st.text_input("Équipage")
-                hr = st.text_input("Horaire")
+                hr = st.text_input("Horaire (ex: 08h30 - 12h00)")
                 sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action": "add", "date": d.strftime("%d/%m/%Y"), "equipage": eq, "horaire": hr, "simu": sm}))
@@ -143,7 +148,8 @@ elif menu == "🔐 Administration":
 
         with tab2:
             if not df.empty:
-                idx_mod = st.selectbox("Sélectionner pour modifier", df.index, format_func=lambda x: f"{df.loc[x, 'Date']} - {df.loc[x, 'Equipage']}")
+                # Utilisation de la fonction format_resa pour voir l'horaire et le simu
+                idx_mod = st.selectbox("Sélectionner pour modifier", df.index, format_func=format_resa)
                 val_simu = str(df.loc[idx_mod, 'Simu']).strip()
                 list_simus = list(SIMU_CONFIG.keys())
                 default_idx = list_simus.index(val_simu) if val_simu in list_simus else 0
@@ -159,13 +165,14 @@ elif menu == "🔐 Administration":
 
         with tab3:
             if not df.empty:
-                target = st.selectbox("Ligne à supprimer", df.index, format_func=lambda x: f"{df.loc[x, 'Date']} - {df.loc[x, 'Equipage']}")
+                # Utilisation de la fonction format_resa pour voir l'horaire et le simu ici aussi
+                target = st.selectbox("Ligne à supprimer", df.index, format_func=format_resa)
                 
                 if st.button("❌ Supprimer la sélection"):
                     st.session_state['confirm_del'] = True
                 
                 if st.session_state.get('confirm_del'):
-                    st.warning(f"Confirmer la suppression de : {df.loc[target, 'Equipage']} ?")
+                    st.warning(f"Confirmer la suppression de : {df.loc[target, 'Equipage']} ({df.loc[target, 'Horaire']} sur {df.loc[target, 'Simu']}) ?")
                     if st.button("✅ CONFIRMER DÉFINITIVEMENT"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action": "delete", "row": int(target)+2}))
                         st.session_state['confirm_del'] = False
