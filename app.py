@@ -11,10 +11,10 @@ SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvq
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 
 SIMU_CONFIG = {
-    "Passerelle 1": "#B3E5FC", # Bleu
-    "Machine": "#C8E6C9",      # Vert
-    "Radar": "#FFF9C4",        # Jaune
-    "Manœuvre": "#F8BBD0"      # Rose
+    "Passerelle 1": "#B3E5FC", 
+    "Machine": "#C8E6C9",      
+    "Radar": "#FFF9C4",        
+    "Manœuvre": "#F8BBD0"      
 }
 
 TRANCHES = [
@@ -25,37 +25,33 @@ TRANCHES = [
 
 st.set_page_config(page_title="Planning Naval", layout="wide", page_icon="⚓")
 
-# --- STYLE CSS AMÉLIORÉ ---
+# --- STYLE CSS (FLUIDE & CÔTE À CÔTE) ---
 st.markdown("""
     <style>
     .slot-container {
         display: flex;
         flex-direction: row;
-        flex-wrap: wrap;
-        gap: 4px;
-        min-height: 80px;
-        align-content: flex-start;
+        gap: 5px;
+        width: 100%;
     }
     .calendar-cell {
         flex: 1;
-        min-width: 80px;
-        padding: 5px;
+        padding: 8px 4px;
         border-radius: 4px;
         font-size: 11px;
         border: 1px solid rgba(0,0,0,0.1);
         color: #000 !important;
         text-align: center;
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        min-width: 0; /* Évite le débordement */
+        word-wrap: break-word;
     }
     .time-label {
         background-color: #f8f9fa;
         font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        border-right: 2px solid #003366;
+        text-align: center;
         color: #003366;
+        border-right: 2px solid #003366;
+        padding: 10px 0;
     }
     .day-header {
         text-align: center;
@@ -68,7 +64,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- LOGIQUE ---
+# --- FONCTION DE FILTRAGE ---
 def appartient_a_tranche(horaire_str, t_debut, t_fin):
     try:
         match = re.search(r'(\d+)[h:]?(\d+)?', str(horaire_str))
@@ -97,51 +93,53 @@ df = load_data()
 menu = st.sidebar.selectbox("Navigation ⚓", ["📅 Planning Semaine", "📊 Résumé", "🔐 Admin"])
 
 if menu == "📅 Planning Semaine":
-    st.title("🗓️ Planification Stratégique (Lundi - Vendredi)")
+    st.title("🗓️ Planning Hebdomadaire des Simulateurs")
     
     col_nav, _ = st.columns([2, 4])
     with col_nav:
         selected_date = st.date_input("Semaine du :", datetime.now())
     
-    # Calcul des jours de la semaine (Lundi à Vendredi uniquement)
-    start_of_week = selected_date - timedelta(days=selected_date.weekday())
-    week_days = [start_of_week + timedelta(days=i) for i in range(5)] # Range 5 pour s'arrêter au vendredi
+    # Lundi de la semaine sélectionnée
+    start_of_week = (selected_date - timedelta(days=selected_date.weekday()))
+    # On crée une liste d'objets DATE (pas datetime)
+    week_days = [(start_of_week + timedelta(days=i)) for i in range(5)]
     day_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 
-    # En-têtes (Jours)
-    cols = st.columns([0.8] + [1]*5)
-    cols[0].write("") 
+    # En-têtes
+    cols = st.columns([0.7] + [1]*5)
     for i, d in enumerate(week_days):
         cols[i+1].markdown(f"<div class='day-header'>{day_names[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Lignes (Tranches Horaires)
+    # Grille horaire
     for t_start, t_end in TRANCHES:
-        row_cols = st.columns([0.8] + [1]*5)
+        row_cols = st.columns([0.7] + [1]*5)
         row_cols[0].markdown(f"<div class='time-label'>{t_start}<br>{t_end}</div>", unsafe_allow_html=True)
         
         for i, d in enumerate(week_days):
             with row_cols[i+1]:
-                mask = (df['Date_DT'].dt.date == d.date())
+                # CORRECTION ICI : d est déjà une date, on compare directement
+                mask = (df['Date_DT'].dt.date == d)
                 resas_du_jour = df[mask]
                 resas_tranche = resas_du_jour[resas_du_jour['Horaire'].apply(lambda x: appartient_a_tranche(x, t_start, t_end))]
                 
-                # Container Flex pour l'affichage côte à côte
-                html_content = '<div class="slot-container">'
                 if not resas_tranche.empty:
+                    html_content = '<div class="slot-container">'
                     for _, r in resas_tranche.iterrows():
                         color = SIMU_CONFIG.get(r['Simu'], "#EEEEEE")
                         html_content += f"""
                             <div class="calendar-cell" style="background-color: {color};">
-                                <b>{r['Equipage']}</b><br>
-                                {r['Simu']}
+                                <b>{r['Equipage']}</b><br>{r['Simu']}
                             </div>
                         """
-                html_content += '</div>'
-                st.markdown(html_content, unsafe_allow_html=True)
+                    html_content += '</div>'
+                    st.markdown(html_content, unsafe_allow_html=True)
+                else:
+                    st.markdown('<div style="min-height:50px; border-bottom: 1px solid #f0f2f6;"></div>', unsafe_allow_html=True)
         st.divider()
 
+# --- BLOCS ADMIN (IDENTIQUES AU CODE PRÉCÉDENT) ---
 elif menu == "🔐 Admin":
-    st.info("Utilisez cet onglet pour gérer vos séances.")
-    # Le reste du code admin (Ajouter/Modifier) reste identique
+    st.subheader("Gestion des séances")
+    # ... (Ajouter / Modifier / Supprimer)
