@@ -14,17 +14,17 @@ SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5Fe
 ADMIN_PASSWORD = "1234" 
 
 SIMU_CONFIG = {
-    "JUPITER": "#B3E5FC",    # Bleu
-    "MINERVE": "#F8BBD0",    # Violet-Rose
-    "JUNON": "#FFF9C4",      # Jaune clair
-    "BACCHUS": "#C8E6C9",    # Vert
-    "MARS": "#FFCCBC",       # Orange-Corail
-    "SATURNE": "#D1C4E9",    # Mauve
-    "CRONOS": "#CFD8DC",     # Gris-Bleu
-    "NEKKAR": "#B2DFDB",     # Turquoise
-    "PHOBOS": "#F0F4C3",     # Lime
-    "PERSEE": "#FFE0B2",     # Ambre
-    "SAGITTAIRE": "#E1BEE7"  # Lavande
+    "JUPITER": "#1976D2",    # Bleu soutenu
+    "MINERVE": "#C2185B",    # Rose/Bordeaux
+    "JUNON": "#FBC02D",      # Jaune moutarde
+    "BACCHUS": "#388E3C",    # Vert forêt
+    "MARS": "#D84315",       # Orange Brûlé / Corail foncé
+    "SATURNE": "#512DA8",    # Violet profond
+    "CRONOS": "#455A64",     # Gris Ardoise
+    "NEKKAR": "#00796B",     # Sarcelle / Teal
+    "PHOBOS": "#689F38",     # Vert Olive
+    "PERSEE": "#E65100",     # Orange Foncé
+    "SAGITTAIRE": "#8E24AA"  # Pourpre
 }
 
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
