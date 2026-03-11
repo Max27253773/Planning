@@ -4,8 +4,9 @@ import requests
 import time
 import re
 import json
+import io
 from datetime import datetime, timedelta
-import streamlit.components.v1 as components
+from PIL import Image, ImageDraw, ImageFont
 
 # --- CONFIGURATION (VERROUILLÉE) ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
@@ -23,71 +24,20 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
-# --- NOUVELLE FONCTION DE CAPTURE (PLUS ROBUSTE) ---
-def bouton_capture(nom_fichier):
-    components.html(f"""
-        <html>
-        <body>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <script>
-        function doCapture() {{
-            // On cible la zone principale de l'application (le contenu à droite de la sidebar)
-            const mainContent = window.parent.document.querySelector('section.main');
-            
-            if (!mainContent) {{
-                alert("Erreur : Impossible d'accéder à la zone d'affichage.");
-                return;
-            }}
-
-            html2canvas(mainContent, {{
-                backgroundColor: "#FFFFFF",
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                allowTaint: true
-            }}).then(canvas => {{
-                try {{
-                    const link = document.createElement('a');
-                    link.download = '{nom_fichier}.png';
-                    link.href = canvas.toDataURL("image/png");
-                    link.click();
-                }} catch (e) {{
-                    alert("Le téléchargement a échoué. Vérifiez les autorisations de votre navigateur.");
-                }}
-            }});
-        }}
-        </script>
-        <button onclick="doCapture()" style="
-            background-color: #ff4b4b; 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 8px; 
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            font-family: sans-serif;
-            font-size: 14px;">
-            📸 TÉLÉCHARGER L'IMAGE
-        </button>
-        </body>
-        </html>
-    """, height=70)
-
-# --- STYLE CSS ---
+# --- STYLE CSS (POUR L'ÉCRAN) ---
 st.markdown("""
     <style>
     .slot-wrapper { position: relative; width: 100%; height: 45px; }
     .calendar-cell-unique { 
         position: absolute; top: 2px; left: 2px; right: 2px;
         z-index: 100; padding: 4px; border-radius: 4px; 
-        font-size: 12px; border: 1px solid rgba(0,0,0,0.2); 
+        font-size: 13px; border: 1px solid rgba(0,0,0,0.2); 
         color: #000 !important; text-align: center; font-weight: bold;
         display: flex; align-items: center; justify-content: center;
         overflow: hidden; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
     .time-col-full { font-size: 14px; font-weight: 900; color: #003366; text-align: right; padding-right: 15px; border-right: 4px solid #003366; }
-    .time-col-half { font-size: 12px; font-style: italic; font-weight: 400; color: #555; text-align: right; padding-right: 15px; border-right: 4px solid #99abc0; }
+    .time-col-half { font-size: 13px; font-style: italic; font-weight: 400; color: #555; text-align: right; padding-right: 15px; border-right: 4px solid #99abc0; }
     .grid-line-hour { border-bottom: 2px solid #888; height: 45px; background-color: rgba(0,0,0,0.02); }
     .grid-line-min { border-bottom: 1px dashed #ccc; height: 45px; }
     .day-header { text-align: center; background-color: #003366; color: white; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; }
@@ -114,43 +64,90 @@ def load_data():
         return data.dropna(subset=['Date_DT', 'Horaire'])
     except: return pd.DataFrame()
 
-df = load_data()
+# --- GÉNÉRATEUR D'IMAGE (SERVEUR) ---
+def generer_image_planning(df_view, week_days, simu_name):
+    # Dimensions de l'image
+    W, H = 1000, 1200
+    img = Image.new('RGB', (W, H), color='white')
+    draw = ImageDraw.Draw(img)
+    
+    # Couleurs
+    navy = (0, 51, 102)
+    gray = (200, 200, 200)
+    bg_simu = SIMU_CONFIG.get(simu_name.upper(), "#B3E5FC")
+    
+    # Titre
+    draw.rectangle([0, 0, W, 80], fill=navy)
+    draw.text((W//2 - 100, 25), f"PLANNING : {simu_name}", fill='white')
 
-# --- SIDEBAR ---
+    col_w = (W - 100) // 5
+    row_h = (H - 120) // len(QUARTS_HEURES)
+    
+    # Jours
+    jours_fr = ["Lun", "Mar", "Mer", "Jeu", "Ven"]
+    for i, d in enumerate(week_days):
+        x = 100 + i * col_w
+        draw.rectangle([x, 80, x + col_w, 120], outline='black', fill=(240, 240, 240))
+        draw.text((x + 10, 90), f"{jours_fr[i]} {d.strftime('%d/%m')}", fill='black')
+
+    # Grille et Heures
+    for j, q in enumerate(QUARTS_HEURES):
+        y = 120 + j * row_h
+        draw.text((10, y + 5), q, fill=navy)
+        draw.line([100, y, W, y], fill=gray)
+        
+        h_actuelle = int(q.split(':')[0]) + int(q.split(':')[1])/60
+        for i, d in enumerate(week_days):
+            resas = df_view[df_view['Date_DT'].dt.date == d.date()]
+            for _, r in resas.iterrows():
+                h_deb, h_fin = extraire_heures(r['Horaire'])
+                if h_deb == h_actuelle:
+                    x_pos = 100 + i * col_w
+                    y_fin = y + int((h_fin - h_deb) * 2 * row_h)
+                    draw.rectangle([x_pos+2, y+2, x_pos+col_w-2, y_fin-2], fill=bg_simu, outline='black')
+                    draw.text((x_pos+5, y+10), str(r['Equipage'])[:15], fill='black')
+
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    return img_byte_arr.getvalue()
+
+# --- INTERFACE ---
+df = load_data()
 menu = st.sidebar.radio("MENU", ["📅 Planning Hebdomadaire", "📊 Statistiques", "🔐 Administration"])
 
 st.sidebar.divider()
-st.sidebar.subheader("Réglages")
 annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=datetime.now().isocalendar()[1]-1)
 simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 
-st.sidebar.divider()
-st.sidebar.write("💾 **Export**")
-filename = f"Planning_{simu_sel}_S{semaine_sel}"
-bouton_capture(filename)
-
-# --- AFFICHAGE ---
+# Filtrage
 monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).weekday())) + timedelta(weeks=semaine_sel-1)
 week_days = [monday + timedelta(days=i) for i in range(5)]
+df_view = df[df['Simu'].str.strip().str.upper() == simu_sel.upper()]
+
+# BOUTON DE TÉLÉCHARGEMENT SÉCURISÉ
+st.sidebar.divider()
+img_bin = generer_image_planning(df_view, week_days, simu_sel)
+st.sidebar.download_button(
+    label="📥 Télécharger l'IMAGE (PNG)",
+    data=img_bin,
+    file_name=f"Planning_{simu_sel}_S{semaine_sel}.png",
+    mime="image/png"
+)
 
 if menu == "📅 Planning Hebdomadaire":
     st.title(f"⚓ Planning : {simu_sel}")
-    
     cols = st.columns([0.6] + [1]*5)
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     for i, d in enumerate(week_days):
         cols[i+1].markdown(f"<div class='day-header'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
-    df_view = df[df['Simu'].str.strip().str.upper() == simu_sel.upper()]
     color_active = SIMU_CONFIG.get(simu_sel, "#EEEEEE")
-
     for q in QUARTS_HEURES:
         if q == "20:30": continue
         row_cols = st.columns([0.6] + [1]*5)
         is_pile = q.endswith(":00")
         h_actuelle = int(q.split(':')[0]) + int(q.split(':')[1])/60
-        
         t_class = "time-col-full" if is_pile else "time-col-half"
         row_cols[0].markdown(f"<div class='{t_class}'>{q}</div>", unsafe_allow_html=True)
         
@@ -163,15 +160,11 @@ if menu == "📅 Planning Hebdomadaire":
                     if h_deb == h_actuelle:
                         hauteur_px = int((h_fin - h_deb) * 2 * 45) - 4 
                         html_bloc += f'<div class="calendar-cell-unique" style="background-color:{color_active}; height:{hauteur_px}px;">{r["Equipage"]}</div>'
-                
-                grid_class = "grid-line-hour" if is_pile else "grid-line-min"
-                st.markdown(f"<div class='slot-wrapper'><div class='{grid_class}'></div>{html_bloc}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='slot-wrapper'><div class='{'grid-line-hour' if is_pile else 'grid-line-min'}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
 elif menu == "📊 Statistiques":
     st.title("📊 Statistiques")
-    if not df.empty:
-        st.bar_chart(df['Simu'].value_counts())
-        st.dataframe(df.drop(columns=['Date_DT']), use_container_width=True)
+    st.bar_chart(df['Simu'].value_counts())
 
 elif menu == "🔐 Administration":
     st.title("⚙️ Gestion")
@@ -182,29 +175,28 @@ elif menu == "🔐 Administration":
             r = df.loc[idx]
             return f"{r['Date']} | {r['Horaire']} | {r['Simu']} | {r['Equipage']}"
         with tab1:
-            with st.form("add_f", clear_on_submit=True):
-                d = st.date_input("Date", format="DD/MM/YYYY")
-                eq = st.text_input("Équipage")
-                hr = st.text_input("Horaire (ex: 08:30 - 12:00)")
-                sm = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
-                if st.form_submit_button("VALIDER"):
+            with st.form("a"):
+                d = st.date_input("Date")
+                eq = st.text_input("Equipage")
+                hr = st.text_input("Horaire")
+                sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
+                if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
-                    st.success("OK"); time.sleep(1); st.rerun()
+                    st.rerun()
         with tab2:
             if not df.empty:
-                idx = st.selectbox("Ligne", df.index, format_func=format_resa)
-                with st.form("edit_f"):
-                    ed = st.date_input("Date", value=df.loc[idx,'Date_DT'], format="DD/MM/YYYY")
-                    ee = st.text_input("Équipage", df.loc[idx,'Equipage'])
+                idx = st.selectbox("Editer", df.index, format_func=format_resa)
+                with st.form("e"):
+                    ed = st.date_input("Date", value=df.loc[idx,'Date_DT'])
+                    ee = st.text_input("Equipage", df.loc[idx,'Equipage'])
                     eh = st.text_input("Horaire", df.loc[idx,'Horaire'])
-                    es = st.selectbox("Simu", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx,'Simu']).strip()) if str(df.loc[idx,'Simu']).strip() in SIMU_CONFIG else 0)
-                    if st.form_submit_button("MODIFIER"):
+                    es = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
+                    if st.form_submit_button("Modifier"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
-                        st.success("OK"); time.sleep(1); st.rerun()
+                        st.rerun()
         with tab3:
             if not df.empty:
-                target = st.selectbox("Supprimer", df.index, format_func=format_resa)
-                if st.button("❌ Supprimer définitivement"):
-                    requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(target)+2}))
-                    st.success("Supprimé"); time.sleep(1); st.rerun()
-    else: st.info("Entrez le mot de passe.")
+                t = st.selectbox("Supprimer", df.index, format_func=format_resa)
+                if st.button("Supprimer"):
+                    requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
+                    st.rerun()
