@@ -10,7 +10,7 @@ SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvq
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 
 st.set_page_config(page_title="Planning Simu Pro", layout="wide")
-st.title("✈️ Suivi des Heures Simulateur")
+st.title("✈️ PLANNING")
 
 def extraire_heures(horaire_str):
     """Calcule la durée à partir d'une chaîne type '08h-12h' ou '4h'"""
@@ -39,7 +39,7 @@ def load_data():
 
 df = load_data()
 
-menu = st.sidebar.selectbox("Menu", ["Consulter le Planning", "Statistiques Heures 📊", "Administration 🔐"])
+menu = st.sidebar.selectbox("Menu", ["Consulter le Planning", "Statistiques 📊", "Administration 🔐"])
 
 # --- VUE CONSULTATION ---
 if menu == "Consulter le Planning":
@@ -55,7 +55,7 @@ if menu == "Consulter le Planning":
                 st.write(f"**🖥️ Simu :** {row['Simu']}")
 
 # --- VUE STATISTIQUES ---
-elif menu == "Statistiques Heures 📊":
+elif menu == "Statistiques 📊":
     st.subheader("📈 Bilan des heures par équipage")
     if df.empty:
         st.info("Aucune donnée disponible.")
