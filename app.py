@@ -11,6 +11,7 @@ SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvq
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
 
+# Liste officielle des simulateurs
 SIMU_CONFIG = {
     "JUPITER": "#B3E5FC", "MINERVE": "#C8E6C9", "JUNON": "#FFF9C4",        
     "BACCHUS": "#F8BBD0", "MARS": "#E1BEE7", "SATURNE": "#FFCCBC",
@@ -23,7 +24,7 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
-# --- STYLE CSS (Français & Contrasté) ---
+# --- STYLE CSS (Français & Différenciation Visuelle) ---
 st.markdown("""
     <style>
     .slot-container { display: flex !important; flex-direction: row !important; gap: 2px !important; width: 100% !important; height: 100%; }
@@ -59,7 +60,7 @@ def load_data():
     try:
         url = f"{SHEET_CSV_URL}&v={time.time()}"
         data = pd.read_csv(url)
-        # Formatage européen impératif pour Google Sheets
+        # Forcer la lecture en format jour/mois/année
         data['Date_DT'] = pd.to_datetime(data['Date'], dayfirst=True, errors='coerce')
         return data.dropna(subset=['Date_DT', 'Horaire'])
     except: return pd.DataFrame()
@@ -76,6 +77,7 @@ if menu == "📅 Planning Hebdomadaire":
     with c1: annee_sel = st.selectbox("Année", [2025, 2026, 2027], index=1)
     with c2: semaine_sel = st.selectbox("Semaine", range(1, 54), index=datetime.now().isocalendar()[1]-1)
 
+    # Calcul du lundi de la semaine sélectionnée
     monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).weekday())) + timedelta(weeks=semaine_sel-1)
     week_days = [monday + timedelta(days=i) for i in range(5)]
 
@@ -115,52 +117,54 @@ elif menu == "📊 Statistiques":
             st.subheader("Top 10 des Équipages")
             st.bar_chart(df['Equipage'].value_counts().head(10))
         st.divider()
-        st.subheader("Historique Complet")
+        st.subheader("Journal des Réservations")
         st.dataframe(df.drop(columns=['Date_DT']), use_container_width=True)
 
 # --- 3. ADMINISTRATION ---
 elif menu == "🔐 Administration":
-    st.title("⚙️ Gestion des Réservations")
+    st.title("⚙️ Gestion du Planning")
     pwd = st.sidebar.text_input("Mot de passe", type="password")
+    
     if pwd == ADMIN_PASSWORD:
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
+        
         def format_resa(idx):
             r = df.loc[idx]
             return f"{r['Date']} | {r['Horaire']} | {r['Simu']} | {r['Equipage']}"
         
         with tab1:
             with st.form("form_add", clear_on_submit=True):
-                # Formatage JJ/MM/AAAA imposé ici
-                d = st.date_input("Date", format="DD/MM/YYYY")
-                eq = st.text_input("Équipage")
+                # Sélecteur de date forcé au format français
+                d = st.date_input("Date de la réservation", format="DD/MM/YYYY")
+                eq = st.text_input("Nom de l'équipage")
                 hr = st.text_input("Horaire (ex: 08h30 - 12h00)")
                 sm = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
-                if st.form_submit_button("Ajouter au planning"):
+                if st.form_submit_button("VALIDER L'AJOUT"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
-                    st.success("Réservation ajoutée !"); time.sleep(1); st.rerun()
+                    st.success("Réservation enregistrée !"); time.sleep(1); st.rerun()
         
         with tab2:
             if not df.empty:
-                idx = st.selectbox("Sélectionner la ligne à modifier", df.index, format_func=format_resa)
+                idx = st.selectbox("Choisir la réservation à modifier", df.index, format_func=format_resa)
                 with st.form("form_edit"):
-                    # Formatage JJ/MM/AAAA imposé ici
-                    ed = st.date_input("Date", value=df.loc[idx,'Date_DT'], format="DD/MM/YYYY")
+                    ed = st.date_input("Nouvelle date", value=df.loc[idx,'Date_DT'], format="DD/MM/YYYY")
                     ee = st.text_input("Équipage", df.loc[idx,'Equipage'])
                     eh = st.text_input("Horaire", df.loc[idx,'Horaire'])
                     es = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx,'Simu']).strip()) if str(df.loc[idx,'Simu']).strip() in SIMU_CONFIG else 0)
-                    if st.form_submit_button("Mettre à jour"):
+                    if st.form_submit_button("METTRE À JOUR"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
-                        st.success("Modification enregistrée !"); time.sleep(1); st.rerun()
+                        st.success("Mise à jour réussie !"); time.sleep(1); st.rerun()
         
         with tab3:
             if not df.empty:
-                target = st.selectbox("Sélectionner la ligne à supprimer", df.index, format_func=format_resa)
-                if st.button("❌ Supprimer la réservation"): st.session_state['confirm_del'] = True
+                target = st.selectbox("Choisir la réservation à supprimer", df.index, format_func=format_resa)
+                if st.button("❌ Supprimer la ligne"): st.session_state['confirm_del'] = True
+                
                 if st.session_state.get('confirm_del'):
-                    st.warning(f"Confirmer la suppression ?")
-                    if st.button("✅ OUI, CONFIRMER"):
+                    st.warning(f"Voulez-vous supprimer définitivement cette ligne ?")
+                    if st.button("OUI, SUPPRIMER"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(target)+2}))
                         st.session_state['confirm_del'] = False
-                        st.success("Réservation supprimée !"); time.sleep(1); st.rerun()
+                        st.success("Supprimé avec succès !"); time.sleep(1); st.rerun()
     else: 
-        st.error("Accès restreint aux administrateurs.")
+        st.info("Veuillez entrer le mot de passe dans la barre latérale pour accéder à la console d'administration.")
