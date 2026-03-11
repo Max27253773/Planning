@@ -23,7 +23,7 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
-# --- STYLE CSS (Support Blocs Uniques + Grille) ---
+# --- STYLE CSS ---
 st.markdown("""
     <style>
     .slot-wrapper { position: relative; width: 100%; height: 45px; }
@@ -44,7 +44,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- LOGIQUE INTERNE ---
+# --- LOGIQUE ---
 def extraire_heures(horaire_str):
     try:
         nums = re.findall(r'(\d+)', str(horaire_str))
@@ -69,7 +69,6 @@ df = load_data()
 # --- NAVIGATION ---
 menu = st.sidebar.radio("MENU", ["📅 Planning Hebdomadaire", "📊 Statistiques", "🔐 Administration"])
 
-# --- 1. PLANNING ---
 if menu == "📅 Planning Hebdomadaire":
     st.title("⚓ Planning des Simulateurs")
     c1, c2, _ = st.columns([1, 1, 4])
@@ -106,19 +105,14 @@ if menu == "📅 Planning Hebdomadaire":
                 grid_class = "grid-line-hour" if is_pile else "grid-line-min"
                 st.markdown(f"<div class='slot-wrapper'><div class='{grid_class}'></div>{html_blocs}</div>", unsafe_allow_html=True)
 
-# --- 2. STATISTIQUES ---
 elif menu == "📊 Statistiques":
-    st.title("📊 Statistiques d'Utilisation")
+    st.title("📊 Statistiques")
     if not df.empty:
-        col1, col2 = st.columns(2)
-        with col1: st.bar_chart(df['Simu'].value_counts())
-        with col2: st.bar_chart(df['Equipage'].value_counts().head(10))
-        st.divider()
+        st.bar_chart(df['Simu'].value_counts())
         st.dataframe(df.drop(columns=['Date_DT']), use_container_width=True)
 
-# --- 3. ADMINISTRATION ---
 elif menu == "🔐 Administration":
-    st.title("⚙️ Gestion du Planning")
+    st.title("⚙️ Gestion")
     pwd = st.sidebar.text_input("Mot de passe", type="password")
     
     if pwd == ADMIN_PASSWORD:
@@ -135,25 +129,27 @@ elif menu == "🔐 Administration":
                 sm = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("VALIDER L'AJOUT"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
-                    st.success("Réservation enregistrée !"); time.sleep(1); st.rerun()
+                    st.success("Ajouté !"); time.sleep(1); st.rerun()
         
         with tab2:
             if not df.empty:
                 idx = st.selectbox("Choisir la réservation à modifier", df.index, format_func=format_resa)
                 with st.form("form_edit"):
-                    ed = st.date_input("Nouvelle date", value=df.loc[idx,'Date_DT'], format="DD/MM/YYYY")
+                    ed = st.date_input("Date", value=df.loc[idx,'Date_DT'], format="DD/MM/YYYY")
                     ee = st.text_input("Équipage", df.loc[idx,'Equipage'])
                     eh = st.text_input("Horaire", df.loc[idx,'Horaire'])
                     es = st.selectbox("Simulateur", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx,'Simu']).strip()) if str(df.loc[idx,'Simu']).strip() in SIMU_CONFIG else 0)
                     if st.form_submit_button("METTRE À JOUR"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
-                        st.success("Mise à jour réussie !"); time.sleep(1); st.rerun()
+                        st.success("Mis à jour !"); time.sleep(1); st.rerun()
         
         with tab3:
             if not df.empty:
                 target = st.selectbox("Choisir la réservation à supprimer", df.index, format_func=format_resa)
-                if st.button("❌ Supprimer définitivement"):
+                # LA SÉCURITÉ EST ICI
+                confirmer = st.checkbox("Cochez cette case pour confirmer la suppression")
+                if st.button("❌ Supprimer définitivement", disabled=not confirmer):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(target)+2}))
                     st.success("Supprimé !"); time.sleep(1); st.rerun()
     else: 
-        st.info("Veuillez entrer le mot de passe dans la barre latérale.")
+        st.info("Entrez le mot de passe.")
