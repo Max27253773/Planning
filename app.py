@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 
-# IMPORTANT : Vérifiez que les noms ici correspondent EXACTEMENT à ceux de votre Excel
 SIMU_CONFIG = {
     "Passerelle 1": "#B3E5FC", 
     "Machine": "#C8E6C9",      
@@ -26,7 +25,7 @@ TRANCHES = [
 
 st.set_page_config(page_title="Planning Naval", layout="wide", page_icon="⚓")
 
-# --- STYLE CSS (RÉPARÉ) ---
+# --- STYLE CSS (FLEXBOX) ---
 st.markdown("""
     <style>
     .slot-container {
@@ -45,18 +44,16 @@ st.markdown("""
         color: #000 !important;
         text-align: center !important;
         min-width: 0 !important;
-        word-wrap: break-word !important;
     }
     .time-label {
         background-color: #f8f9fa;
         font-weight: bold;
         text-align: center;
         color: #003366;
-        border-right: 2px solid #003366;
+        border-right: 3px solid #003366;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
     }
     .day-header {
         text-align: center;
@@ -65,12 +62,17 @@ st.markdown("""
         padding: 10px;
         border-radius: 5px;
         font-weight: bold;
-        font-size: 14px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FONCTION DE FILTRAGE ---
+# --- LOGIQUE DE DATE ---
+def get_monday_from_week(year, week):
+    # Calcule le premier jour de la semaine ISO
+    first_day_of_year = datetime(year, 1, 4)
+    first_monday = first_day_of_year - timedelta(days=first_day_of_year.weekday())
+    return first_monday + timedelta(weeks=week-1)
+
 def appartient_a_tranche(horaire_str, t_debut, t_fin):
     try:
         match = re.search(r'(\d+)[h:]?(\d+)?', str(horaire_str))
@@ -96,52 +98,57 @@ def load_data():
 
 df = load_data()
 
-menu = st.sidebar.selectbox("Navigation ⚓", ["📅 Planning Semaine", "📊 Résumé", "🔐 Admin"])
+menu = st.sidebar.selectbox("Navigation ⚓", ["📅 Planning Hebdo", "📊 Résumé", "🔐 Admin"])
 
-if menu == "📅 Planning Semaine":
-    st.title("🗓️ Planning Hebdomadaire")
+if menu == "📅 Planning Hebdo":
+    st.title("⚓ Planification par Semaine")
     
-    col_nav, _ = st.columns([2, 4])
-    with col_nav:
-        selected_date = st.date_input("Semaine du :", datetime.now())
+    # Sélecteurs de Semaine
+    c_nav1, c_nav2, _ = st.columns([1, 1, 3])
+    with c_nav1:
+        annee_sel = st.selectbox("Année", [2025, 2026, 2027], index=1)
+    with c_nav2:
+        # Détermine la semaine actuelle par défaut
+        current_week = datetime.now().isocalendar()[1]
+        semaine_sel = st.selectbox("Semaine", range(1, 53), index=current_week-1)
     
-    start_of_week = (selected_date - timedelta(days=selected_date.weekday()))
-    week_days = [(start_of_week + timedelta(days=i)) for i in range(5)]
+    # Calcul des jours
+    monday = get_monday_from_week(annee_sel, semaine_sel)
+    week_days = [monday + timedelta(days=i) for i in range(5)]
     day_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 
+    st.info(f"Affichage de la **Semaine {semaine_sel}** (du {week_days[0].strftime('%d/%m/%Y')} au {week_days[-1].strftime('%d/%m/%Y')})")
+
     # En-têtes
-    cols = st.columns([0.7] + [1]*5)
+    cols = st.columns([0.8] + [1]*5)
     for i, d in enumerate(week_days):
         cols[i+1].markdown(f"<div class='day-header'>{day_names[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Grille horaire
+    # Grille
     for t_start, t_end in TRANCHES:
-        row_cols = st.columns([0.7] + [1]*5)
+        row_cols = st.columns([0.8] + [1]*5)
         row_cols[0].markdown(f"<div class='time-label'>{t_start}<br>{t_end}</div>", unsafe_allow_html=True)
         
         for i, d in enumerate(week_days):
             with row_cols[i+1]:
-                mask = (df['Date_DT'].dt.date == d)
+                mask = (df['Date_DT'].dt.date == d.date())
                 resas_du_jour = df[mask]
                 resas_tranche = resas_du_jour[resas_du_jour['Horaire'].apply(lambda x: appartient_a_tranche(x, t_start, t_end))]
                 
                 if not resas_tranche.empty:
-                    # Construction propre de la chaîne HTML
                     html_content = '<div class="slot-container">'
                     for _, r in resas_tranche.iterrows():
-                        # On récupère la couleur, sinon gris (#EEEEEE)
                         color = SIMU_CONFIG.get(r['Simu'], "#EEEEEE")
                         html_content += f'<div class="calendar-cell" style="background-color: {color};"><b>{r["Equipage"]}</b><br>{r["Simu"]}</div>'
                     html_content += '</div>'
-                    
-                    # L'élément CRUCIAL : unsafe_allow_html=True
                     st.markdown(html_content, unsafe_allow_html=True)
                 else:
                     st.markdown('<div style="min-height:50px; border-bottom: 1px solid #f0f2f6;"></div>', unsafe_allow_html=True)
         st.divider()
 
+# --- RESTE DU CODE (ADMIN / STATS) ---
 elif menu == "🔐 Admin":
-    st.info("Utilisez cet onglet pour gérer vos séances.")
-    # ... (le reste du code admin suit)
+    st.subheader("Administration")
+    # (Logique Ajouter/Modifier/Supprimer identique)
