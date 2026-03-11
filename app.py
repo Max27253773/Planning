@@ -8,7 +8,7 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
-# --- CONFIGURATION (PALETTE MISE À JOUR) ---
+# --- CONFIGURATION ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
@@ -96,21 +96,35 @@ simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 current_color = SIMU_CONFIG.get(simu_sel, "#333333")
 text_on_color = "#000000" if simu_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
-# --- CSS ANTI-BLANC ET CORRECTION VISIBILITÉ TEXTE ---
+# --- CSS HARMONISATION MODE CLAIR ---
 st.markdown(f"""
     <style>
-    /* Fond global */
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
-        background-color: #F4F7F9 !important;
-    }}
-    
-    /* FIX : Forcer les textes de titres et labels en sombre pour qu'ils soient visibles sur fond clair */
-    h1, h2, h3, p, span, label, .stMarkdown {{
-        color: #1E1E1E !important;
+    /* Fond principal gris très léger */
+    .stApp {{
+        background-color: #F8F9FB !important;
     }}
 
+    /* Barre latérale : on lui redonne une identité visuelle */
+    [data-testid="stSidebar"] {{
+        background-color: #EDF1F4 !important;
+        border-right: 1px solid #D1D8E0;
+    }}
+
+    /* Titres et textes généraux en sombre */
+    h1, h2, h3, p, span, label {{
+        color: #2C3E50 !important;
+    }}
+
+    /* Champs de saisie (Inputs) : Fond blanc et bordure visible */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"], .stDateInput input {{
+        background-color: white !important;
+        color: #2C3E50 !important;
+        border: 1px solid #BDC3C7 !important;
+        border-radius: 5px !important;
+    }}
+
+    /* Planning Grid */
     .slot-wrapper {{ position: relative; width: 100%; height: 45px; }}
-    
     .calendar-cell-unique {{ 
         position: absolute; top: 2px; left: 2px; right: 2px;
         z-index: 100; padding: 4px; border-radius: 4px; 
@@ -120,16 +134,15 @@ st.markdown(f"""
         overflow: hidden; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     }}
     
-    .time-col-full {{ font-size: 14px; font-weight: 900; color: #333 !important; text-align: right; padding-right: 15px; border-right: 4px solid {current_color}; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
-    .time-col-half {{ font-size: 13px; font-style: italic; font-weight: 400; color: #666 !important; text-align: right; padding-right: 15px; border-right: 4px solid #ccc; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
+    .time-col-full {{ font-size: 14px; font-weight: 900; color: #34495E !important; text-align: right; padding-right: 15px; border-right: 4px solid {current_color}; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
+    .time-col-half {{ font-size: 13px; font-style: italic; font-weight: 400; color: #7F8C8D !important; text-align: right; padding-right: 15px; border-right: 4px solid #D1D8E0; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
     
     .day-header {{ 
         text-align: center; background-color: {current_color} !important; 
         color: {text_on_color} !important; padding: 10px; border-radius: 4px; 
-        font-weight: bold; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.2);
+        font-weight: bold; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1);
     }}
     
-    /* Style du bouton téléchargement */
     div.stDownloadButton > button {{
         background-color: {current_color} !important;
         color: {text_on_color} !important;
@@ -147,7 +160,6 @@ img_bin = generer_image_planning(df_view, week_days, simu_sel)
 st.sidebar.download_button(label="📸 Télécharger Planning", data=img_bin, file_name=f"Planning_{simu_sel}.png", mime="image/png")
 
 if menu == "📅 Planning":
-    # On garde le titre en couleur pour le style
     st.markdown(f"<h1 style='color:{current_color} !important;'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
     cols = st.columns([0.6] + [1]*5)
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
