@@ -5,42 +5,63 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Planning Simu", layout="wide")
 st.title("✈️ Planning Équipages")
 
-# Connexion sécurisée au Google Sheet
+# Connexion au Google Sheet
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Lecture des données
-# Note : on précise le nom de la feuille si nécessaire, sinon il prend la première
-df = conn.read(ttl="1m") # ttl="1m" rafraîchit les données toutes les minutes
+# Lecture des données (on force le rafraîchissement à chaque action)
+df = conn.read(ttl=0) 
 
 menu = st.sidebar.selectbox("Menu", ["Consulter le Planning", "Administration 🔐"])
 
 if menu == "Consulter le Planning":
-    if df.empty:
+    if df is None or df.empty:
         st.info("Aucun vol prévu.")
     else:
-        # On trie par date pour que ce soit lisible
+        # Tri par date
+        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
         df_view = df.sort_values(by="Date")
+        
         for _, row in df_view.iterrows():
-            with st.expander(f"📅 {row['Date']} - {row['Equipage']}"):
+            date_str = row['Date'].strftime('%d/%m/%Y') if not pd.isnull(row['Date']) else "Date inconnue"
+            with st.expander(f"📅 {date_str} - {row['Equipage']}"):
                 st.write(f"**Horaire :** {row['Horaire']}")
                 st.write(f"**Appareil :** {row['Simu']}")
 
 elif menu == "Administration 🔐":
     pwd = st.sidebar.text_input("Code Admin", type="password")
     if pwd == "1234":
-        st.subheader("Ajouter une séance")
-        with st.form("add_form"):
+        st.subheader("🛠️ Gestion du Planning")
+        
+        # --- AJOUT ---
+        with st.form("add_form", clear_on_submit=True):
+            st.write("### Ajouter une séance")
             d = st.date_input("Date")
             e = st.text_input("Equipage")
-            h = st.text_input("Horaire")
+            h = st.text_input("Horaire (ex: 08h-12h)")
             s = st.selectbox("Simu", ["SIM 1", "SIM 2", "SIM 3"])
             
             if st.form_submit_button("Enregistrer"):
-                # On ajoute la nouvelle ligne au tableau actuel
                 new_row = pd.DataFrame([{"Date": str(d), "Equipage": e, "Horaire": h, "Simu": s}])
                 updated_df = pd.concat([df, new_row], ignore_index=True)
-                
-                # On renvoie tout vers Google Sheets
                 conn.update(data=updated_df)
-                st.success("Planning mis à jour sur Google Sheets !")
+                st.success("Planning mis à jour !")
                 st.rerun()
+
+        st.markdown("---")
+        
+        # --- SUPPRESSION ---
+        st.write("### Supprimer une séance")
+        if not df.empty:
+            indices = df.index.tolist()
+            # On crée une liste lisible pour choisir quoi supprimer
+            options = [f"{df.loc[i, 'Date']} - {df.loc[i, 'Equipage']}" for i in indices]
+            to_delete = st.selectbox("Sélectionner la séance à retirer :", options)
+            
+            if st.button("Supprimer définitivement"):
+                index_to_drop = options.index(to_delete)
+                df_dropped = df.drop(df.index[index_to_drop])
+                conn.update(data=df_dropped)
+                st.warning("Séance supprimée.")
+                st.rerun()
+    else:
+        st.info("Entrez le code pour accéder aux modifications.")
