@@ -8,23 +8,23 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
-# --- CONFIGURATION (URLS & COULEURS) ---
+# --- CONFIGURATION (PALETTE MISE À JOUR) ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
 
 SIMU_CONFIG = {
-    "JUPITER": "#1976D2",    # Bleu
-    "MINERVE": "#C2185B",    # Violet-Rose
-    "JUNON": "#757575",      # Gris
-    "BACCHUS": "#388E3C",    # Vert
-    "MARS": "#D32F2F",       # Rouge
-    "SATURNE": "#E65100",    # Orange profond
-    "CRONOS": "#A1887F",     # Beige foncé
-    "NEKKAR": "#C5A000",     # Jaune moutarde
-    "PHOBOS": "#DAA520",     # Jaune moutarde
-    "PERSEE": "#558B2F",     # Vert Olive
-    "SAGITTAIRE": "#4A148C"  # Violet profond
+    "JUPITER": "#1976D2",
+    "MINERVE": "#C2185B",
+    "JUNON": "#757575",
+    "BACCHUS": "#388E3C",
+    "MARS": "#D32F2F",
+    "SATURNE": "#E65100",
+    "CRONOS": "#A1887F",
+    "NEKKAR": "#C5A000",
+    "PHOBOS": "#DAA520",
+    "PERSEE": "#558B2F",
+    "SAGITTAIRE": "#4A148C"
 }
 
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
@@ -55,7 +55,7 @@ def generer_image_planning(df_view, week_days, simu_name):
     W, H = 1000, 1200
     img = Image.new('RGB', (W, H), color='white')
     draw = ImageDraw.Draw(img)
-    navy, gray = (0, 51, 102), (200, 200, 200)
+    navy, gray_line = (0, 51, 102), (200, 200, 200)
     bg_simu = SIMU_CONFIG.get(simu_name.upper(), "#EEEEEE")
     draw.rectangle([0, 0, W, 80], fill=navy)
     draw.text((W//2 - 100, 25), f"PLANNING : {simu_name}", fill='white')
@@ -68,7 +68,7 @@ def generer_image_planning(df_view, week_days, simu_name):
     for j, q in enumerate(QUARTS_HEURES):
         y = 120 + j * row_h
         draw.text((10, y + 5), q, fill=navy)
-        draw.line([100, y, W, y], fill=gray)
+        draw.line([100, y, W, y], fill=gray_line)
         h_act = int(q.split(':')[0]) + int(q.split(':')[1])/60
         for i, d in enumerate(week_days):
             resas = df_view[df_view['Date_DT'].dt.date == d.date()]
@@ -77,8 +77,9 @@ def generer_image_planning(df_view, week_days, simu_name):
                 if h_deb == h_act:
                     x_pos = 100 + i * col_w
                     y_fin = y + int((h_fin - h_deb) * 2 * row_h)
+                    txt_color = "black" if simu_name.upper() in ["PHOBOS", "NEKKAR"] else "white"
                     draw.rectangle([x_pos+2, y+2, x_pos+col_w-2, y_fin-2], fill=bg_simu, outline='black')
-                    draw.text((x_pos+5, y+10), str(r['Equipage'])[:15], fill='black')
+                    draw.text((x_pos+5, y+10), str(r['Equipage'])[:15], fill=txt_color)
     img_byte_arr = io.BytesIO()
     img.save(img_byte_arr, format='PNG')
     return img_byte_arr.getvalue()
@@ -92,17 +93,20 @@ annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=datetime.now().isocalendar()[1]-1)
 simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 
-current_color = SIMU_CONFIG.get(simu_sel, "#003366")
+current_color = SIMU_CONFIG.get(simu_sel, "#333333")
+text_on_color = "#000000" if simu_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
-# --- CSS TOTAL ANTI-BLANC ---
+# --- CSS ANTI-BLANC ET CORRECTION VISIBILITÉ TEXTE ---
 st.markdown(f"""
     <style>
-    /* Ciblage de toutes les couches de fond Streamlit */
-    .stApp, 
-    [data-testid="stAppViewContainer"], 
-    [data-testid="stHeader"], 
-    [data-testid="stMainBlockContainer"] {{
+    /* Fond global */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
         background-color: #F4F7F9 !important;
+    }}
+    
+    /* FIX : Forcer les textes de titres et labels en sombre pour qu'ils soient visibles sur fond clair */
+    h1, h2, h3, p, span, label, .stMarkdown {{
+        color: #1E1E1E !important;
     }}
 
     .slot-wrapper {{ position: relative; width: 100%; height: 45px; }}
@@ -110,35 +114,26 @@ st.markdown(f"""
     .calendar-cell-unique {{ 
         position: absolute; top: 2px; left: 2px; right: 2px;
         z-index: 100; padding: 4px; border-radius: 4px; 
-        font-size: 13px; border: 1px solid rgba(0,0,0,0.2); 
-        color: #000 !important; text-align: center; font-weight: bold;
+        font-size: 13px; border: 1px solid rgba(0,0,0,0.3); 
+        color: {text_on_color} !important; text-align: center; font-weight: bold;
         display: flex; align-items: center; justify-content: center;
-        overflow: hidden; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        overflow: hidden; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     }}
     
-    .time-col-full {{ font-size: 14px; font-weight: 900; color: #333; text-align: right; padding-right: 15px; border-right: 4px solid {current_color}; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
-    .time-col-half {{ font-size: 13px; font-style: italic; font-weight: 400; color: #555; text-align: right; padding-right: 15px; border-right: 4px solid #ccc; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
-    
-    .grid-line-hour {{ border-bottom: 2px solid #888; height: 45px; }}
-    .grid-line-min {{ border-bottom: 1px dashed #ccc; height: 45px; }}
+    .time-col-full {{ font-size: 14px; font-weight: 900; color: #333 !important; text-align: right; padding-right: 15px; border-right: 4px solid {current_color}; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
+    .time-col-half {{ font-size: 13px; font-style: italic; font-weight: 400; color: #666 !important; text-align: right; padding-right: 15px; border-right: 4px solid #ccc; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
     
     .day-header {{ 
-        text-align: center; 
-        background-color: {current_color} !important; 
-        color: #000 !important; 
-        padding: 10px; 
-        border-radius: 4px; 
-        font-weight: bold; 
-        margin-bottom: 10px; 
-        border: 1px solid rgba(0,0,0,0.1);
+        text-align: center; background-color: {current_color} !important; 
+        color: {text_on_color} !important; padding: 10px; border-radius: 4px; 
+        font-weight: bold; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.2);
     }}
     
+    /* Style du bouton téléchargement */
     div.stDownloadButton > button {{
         background-color: {current_color} !important;
-        color: #000 !important;
-        width: 100%;
-        border-radius: 8px;
-        font-weight: bold;
+        color: {text_on_color} !important;
+        width: 100%; border-radius: 8px; font-weight: bold;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -152,8 +147,8 @@ img_bin = generer_image_planning(df_view, week_days, simu_sel)
 st.sidebar.download_button(label="📸 Télécharger Planning", data=img_bin, file_name=f"Planning_{simu_sel}.png", mime="image/png")
 
 if menu == "📅 Planning":
-    st.markdown(f"<h1 style='color:{current_color};'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
-    
+    # On garde le titre en couleur pour le style
+    st.markdown(f"<h1 style='color:{current_color} !important;'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
     cols = st.columns([0.6] + [1]*5)
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     for i, d in enumerate(week_days):
@@ -166,7 +161,6 @@ if menu == "📅 Planning":
         h_act = int(q.split(':')[0]) + int(q.split(':')[1])/60
         t_class = "time-col-full" if is_pile else "time-col-half"
         row_cols[0].markdown(f"<div class='{t_class}'>{q}</div>", unsafe_allow_html=True)
-        
         for i, d in enumerate(week_days):
             with row_cols[i+1]:
                 resas = df_view[df_view['Date_DT'].dt.date == d.date()]
@@ -191,7 +185,6 @@ elif menu == "🔐 Administration":
         def format_resa(idx):
             r = df.loc[idx]
             return f"{r['Date']} | {r['Horaire']} | {r['Simu']} | {r['Equipage']}"
-            
         with tab1:
             with st.form("a", clear_on_submit=True):
                 d = st.date_input("Date")
