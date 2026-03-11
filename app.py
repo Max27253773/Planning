@@ -29,7 +29,6 @@ SIMU_CONFIG = {
 
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
-# Configuration de la page
 st.set_page_config(page_title="⚓ Planning Naval", layout="wide")
 
 # --- LOGIQUE DONNÉES ---
@@ -93,20 +92,21 @@ annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=datetime.now().isocalendar()[1]-1)
 simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 
-# Récupération de la couleur du simulateur
 current_color = SIMU_CONFIG.get(simu_sel, "#003366")
 
-# --- CSS DYNAMIQUE ---
+# --- CSS TOTAL ANTI-BLANC ---
 st.markdown(f"""
     <style>
-    /* Fond de l'application */
-    .stApp, [data-testid="stAppViewContainer"] {{
+    /* Ciblage de toutes les couches de fond Streamlit */
+    .stApp, 
+    [data-testid="stAppViewContainer"], 
+    [data-testid="stHeader"], 
+    [data-testid="stMainBlockContainer"] {{
         background-color: #F4F7F9 !important;
     }}
-    
+
     .slot-wrapper {{ position: relative; width: 100%; height: 45px; }}
     
-    /* Cellules de réservation */
     .calendar-cell-unique {{ 
         position: absolute; top: 2px; left: 2px; right: 2px;
         z-index: 100; padding: 4px; border-radius: 4px; 
@@ -116,14 +116,12 @@ st.markdown(f"""
         overflow: hidden; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }}
     
-    /* Colonnes horaires */
     .time-col-full {{ font-size: 14px; font-weight: 900; color: #333; text-align: right; padding-right: 15px; border-right: 4px solid {current_color}; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
     .time-col-half {{ font-size: 13px; font-style: italic; font-weight: 400; color: #555; text-align: right; padding-right: 15px; border-right: 4px solid #ccc; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
     
     .grid-line-hour {{ border-bottom: 2px solid #888; height: 45px; }}
     .grid-line-min {{ border-bottom: 1px dashed #ccc; height: 45px; }}
     
-    /* EN-TÊTES DE JOURS DYNAMIQUES (MODIFICATION ICI) */
     .day-header {{ 
         text-align: center; 
         background-color: {current_color} !important; 
@@ -133,17 +131,14 @@ st.markdown(f"""
         font-weight: bold; 
         margin-bottom: 10px; 
         border: 1px solid rgba(0,0,0,0.1);
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
     }}
     
-    /* Bouton téléchargement dynamique */
     div.stDownloadButton > button {{
         background-color: {current_color} !important;
         color: #000 !important;
         width: 100%;
         border-radius: 8px;
         font-weight: bold;
-        border: 1px solid rgba(0,0,0,0.1);
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -157,12 +152,11 @@ img_bin = generer_image_planning(df_view, week_days, simu_sel)
 st.sidebar.download_button(label="📸 Télécharger Planning", data=img_bin, file_name=f"Planning_{simu_sel}.png", mime="image/png")
 
 if menu == "📅 Planning":
-    st.markdown(f"<h1 style='color:{current_color}; font-size: 42px;'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color:{current_color};'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
     
     cols = st.columns([0.6] + [1]*5)
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     for i, d in enumerate(week_days):
-        # Application de la classe day-header qui est maintenant liée à current_color
         cols[i+1].markdown(f"<div class='day-header'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
     for q in QUARTS_HEURES:
