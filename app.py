@@ -55,7 +55,7 @@ def generer_image_planning(df_view, week_days, simu_name):
     W, H = 1000, 1200
     img = Image.new('RGB', (W, H), color='white')
     draw = ImageDraw.Draw(img)
-    navy, gray_line = (0, 51, 102), (180, 180, 180)
+    navy, gray_line = (0, 51, 102), (150, 150, 150) # Lignes plus sombres sur l'image
     bg_simu = SIMU_CONFIG.get(simu_name.upper(), "#EEEEEE")
     draw.rectangle([0, 0, W, 80], fill=navy)
     draw.text((W//2 - 100, 25), f"PLANNING : {simu_name}", fill='white')
@@ -96,41 +96,43 @@ simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 current_color = SIMU_CONFIG.get(simu_sel, "#000000")
 text_on_color = "#000000" if simu_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
-# --- CSS CONTRASTE MAXIMUM ---
+# --- CSS CORRECTIF (LIGNES ET BOUTON) ---
 st.markdown(f"""
     <style>
-    /* Fond principal */
     .stApp {{ background-color: #FFFFFF !important; }}
 
-    /* Sidebar très contrastée */
     [data-testid="stSidebar"] {{
         background-color: #E2E8F0 !important;
         border-right: 2px solid #000000 !important;
     }}
 
-    /* Textes en noir pur */
-    h1, h2, h3, p, span, label, .stMarkdown {{
-        color: #000000 !important;
-        font-weight: 500;
-    }}
+    /* FIX LIGNES HORAIRES : On les rend gris foncé pour qu'elles soient visibles */
+    .grid-line-hour {{ border-bottom: 2px solid #555555 !important; height: 45px; }}
+    .grid-line-min {{ border-bottom: 1px dashed #999999 !important; height: 45px; }}
 
-    /* Champs de saisie ultra-visibles */
-    .stTextInput input, .stSelectbox div[data-baseweb="select"], .stDateInput input {{
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 2px solid #000000 !important;
-        border-radius: 4px !important;
+    /* FIX BOUTON TÉLÉCHARGER : Texte blanc sur fond noir + icône visible */
+    div.stDownloadButton > button {{
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border: 2px solid #444444 !important;
+        width: 100%;
         font-weight: bold !important;
+        opacity: 1 !important;
+    }}
+    div.stDownloadButton > button:hover {{
+        border: 2px solid #FFFFFF !important;
+        color: #FFFFFF !important;
+    }}
+    
+    /* On s'assure que l'icône dans le bouton est blanche */
+    div.stDownloadButton svg {{
+        fill: white !important;
     }}
 
-    /* Onglets de l'administration */
-    button[data-baseweb="tab"] {{
-        color: #000000 !important;
-        border: 1px solid #000000 !important;
-        margin-right: 5px;
+    .stTextInput input, .stSelectbox div[data-baseweb="select"], .stDateInput input {{
+        border: 2px solid #000000 !important;
     }}
 
-    /* Grille de planning */
     .slot-wrapper {{ position: relative; width: 100%; height: 45px; }}
     .calendar-cell-unique {{ 
         position: absolute; top: 2px; left: 2px; right: 2px;
@@ -138,25 +140,11 @@ st.markdown(f"""
         font-size: 13px; border: 2px solid #000000; 
         color: {text_on_color} !important; text-align: center; font-weight: 900;
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 3px 3px 0px rgba(0,0,0,1); /* Effet rétro contrasté */
+        box-shadow: 2px 2px 0px rgba(0,0,0,1);
     }}
     
-    .time-col-full {{ font-size: 15px; font-weight: 900; color: #000000 !important; text-align: right; padding-right: 15px; border-right: 5px solid {current_color}; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
-    .time-col-half {{ font-size: 13px; font-weight: 600; color: #444444 !important; text-align: right; padding-right: 15px; border-right: 2px solid #000000; height: 45px; display: flex; align-items: center; justify-content: flex-end; }}
-    
-    .day-header {{ 
-        text-align: center; background-color: {current_color} !important; 
-        color: {text_on_color} !important; padding: 10px; border-radius: 0px; 
-        font-weight: 900; margin-bottom: 10px; border: 2px solid #000000;
-        text-transform: uppercase;
-    }}
-    
-    /* Bouton téléchargement */
-    div.stDownloadButton > button {{
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        width: 100%; border-radius: 0px; font-weight: bold; border: 2px solid #000000;
-    }}
+    .time-col-full {{ color: #000000 !important; font-weight: 900; border-right: 5px solid {current_color}; }}
+    .time-col-half {{ color: #444444 !important; font-weight: 600; border-right: 2px solid #000000; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -169,11 +157,11 @@ img_bin = generer_image_planning(df_view, week_days, simu_sel)
 st.sidebar.download_button(label="📸 Télécharger Planning", data=img_bin, file_name=f"Planning_{simu_sel}.png", mime="image/png")
 
 if menu == "📅 Planning":
-    st.markdown(f"<h1 style='color:#000000 !important; border-bottom: 4px solid {current_color}; padding-bottom: 10px;'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color:#000000 !important; border-bottom: 4px solid {current_color};'>⚓ Planning : {simu_sel}</h1>", unsafe_allow_html=True)
     cols = st.columns([0.6] + [1]*5)
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     for i, d in enumerate(week_days):
-        cols[i+1].markdown(f"<div class='day-header'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
+        cols[i+1].markdown(f"<div style='text-align:center; background-color:{current_color}; color:{text_on_color}; padding:10px; font-weight:900; border:2px solid black;'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
     for q in QUARTS_HEURES:
         if q == "20:30": continue
@@ -181,7 +169,7 @@ if menu == "📅 Planning":
         is_pile = q.endswith(":00")
         h_act = int(q.split(':')[0]) + int(q.split(':')[1])/60
         t_class = "time-col-full" if is_pile else "time-col-half"
-        row_cols[0].markdown(f"<div class='{t_class}'>{q}</div>", unsafe_allow_html=True)
+        row_cols[0].markdown(f"<div class='{t_class}' style='height:45px; display:flex; align-items:center; justify-content:flex-end; padding-right:15px;'>{q}</div>", unsafe_allow_html=True)
         for i, d in enumerate(week_days):
             with row_cols[i+1]:
                 resas = df_view[df_view['Date_DT'].dt.date == d.date()]
@@ -194,12 +182,12 @@ if menu == "📅 Planning":
                 st.markdown(f"<div class='slot-wrapper'><div class='{'grid-line-hour' if is_pile else 'grid-line-min'}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
 elif menu == "📊 Statistiques":
-    st.markdown("<h1 style='color:black;'>📊 Statistiques</h1>", unsafe_allow_html=True)
+    st.title("📊 Statistiques")
     if not df.empty:
         st.bar_chart(df['Simu'].value_counts())
 
 elif menu == "🔐 Administration":
-    st.markdown("<h1 style='color:black;'>⚙️ Gestion Administration</h1>", unsafe_allow_html=True)
+    st.title("⚙️ Gestion")
     pwd = st.sidebar.text_input("Mot de passe", type="password")
     if pwd == ADMIN_PASSWORD:
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
@@ -212,14 +200,14 @@ elif menu == "🔐 Administration":
                 eq = st.text_input("Equipage")
                 hr = st.text_input("Horaire")
                 sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
-                if st.form_submit_button("Ajouter à la liste"):
+                if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
                     st.success("✅ Ajouté !")
                     time.sleep(1)
                     st.rerun()
         with tab2:
             if not df.empty:
-                idx = st.selectbox("Choisir une réservation à éditer", df.index, format_func=format_resa)
+                idx = st.selectbox("Editer", df.index, format_func=format_resa)
                 with st.form("e"):
                     ed = st.date_input("Date", value=df.loc[idx,'Date_DT'])
                     ee = st.text_input("Equipage", df.loc[idx,'Equipage'])
@@ -228,15 +216,15 @@ elif menu == "🔐 Administration":
                     s_list = list(SIMU_CONFIG.keys())
                     def_idx = s_list.index(current_s) if current_s in s_list else 0
                     es = st.selectbox("Simu", s_list, index=def_idx)
-                    if st.form_submit_button("Valider la modification"):
+                    if st.form_submit_button("Modifier"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
                         st.success("📝 Modifié !")
                         time.sleep(1)
                         st.rerun()
         with tab3:
             if not df.empty:
-                t = st.selectbox("Ligne à supprimer définitivement", df.index, format_func=format_resa)
-                confirm = st.checkbox("⚠️ Je confirme vouloir supprimer cette ligne")
+                t = st.selectbox("Supprimer", df.index, format_func=format_resa)
+                confirm = st.checkbox("Confirmer")
                 if st.button("❌ Supprimer", disabled=not confirm):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
                     st.success("🗑️ Supprimé !")
