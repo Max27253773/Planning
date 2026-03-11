@@ -168,7 +168,7 @@ elif menu == "🔐 Administration":
                 sm = st.selectbox("Simu", list(SIMU_CONFIG.keys()))
                 if st.form_submit_button("Ajouter"):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d.strftime("%d/%m/%Y"),"equipage":eq,"horaire":hr,"simu":sm}))
-                    st.success("✅ Réservation ajoutée avec succès !")
+                    st.success("✅ Ajouté !")
                     time.sleep(1)
                     st.rerun()
         with tab2:
@@ -184,14 +184,18 @@ elif menu == "🔐 Administration":
                     es = st.selectbox("Simu", simu_list, index=default_idx)
                     if st.form_submit_button("Modifier"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee,"horaire":eh,"simu":es}))
-                        st.success("📝 Réservation modifiée !")
+                        st.success("📝 Modifié !")
                         time.sleep(1)
                         st.rerun()
         with tab3:
             if not df.empty:
-                t = st.selectbox("Sélectionner la ligne à supprimer", df.index, format_func=format_resa)
-                if st.button("❌ Confirmer la suppression définitive"):
+                t = st.selectbox("Sélectionner la ligne", df.index, format_func=format_resa)
+                
+                # --- LA CASE DE CONFIRMATION EST ICI ---
+                confirm = st.checkbox("⚠️ Je confirme vouloir supprimer définitivement cette ligne")
+                
+                if st.button("🗑️ Supprimer la ligne sélectionnée", disabled=not confirm):
                     requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
-                    st.success("🗑️ Suppression réussie !")
+                    st.success("🗑️ Supprimé !")
                     time.sleep(1)
                     st.rerun()
