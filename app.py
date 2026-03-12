@@ -110,6 +110,8 @@ jour_actuel_idx = maintenant.weekday()
 
 annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=semaine_actuelle - 1)
+jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 simu_sel = st.sidebar.selectbox("Simulateur", list(SIMU_CONFIG.keys()))
 
 st.sidebar.divider()
@@ -131,7 +133,9 @@ st.sidebar.markdown(
 
 monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).weekday())) + timedelta(weeks=semaine_sel-1)
 week_days = [monday + timedelta(days=i) for i in range(5)]
-jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+
+# La date d est maintenant définie globalement pour tous les onglets
+d = week_days[jours_fr_liste.index(choix_j_global)]
 
 current_color = SIMU_CONFIG.get(simu_sel, "#000000")
 text_on_color = "#000000" if simu_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
@@ -178,7 +182,6 @@ df_view = df[df['Simu'].str.strip().str.upper() == simu_sel.upper()]
 if menu == "📅 Planning":
     st.markdown(f"<h1>⚓ {simu_sel}</h1>", unsafe_allow_html=True)
     if mode_vue == "Jour":
-        choix_jour = st.sidebar.selectbox("Choisir le jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
         d = week_days[jours_fr_liste.index(choix_jour)]
         
         st.markdown(f"<div style='text-align:center; background-color:{current_color}; color:{text_on_color}; padding:8px; font-weight:900; border:2px solid black; box-shadow: 2px 2px 0px black; margin-bottom:10px;'>{choix_jour} {d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
@@ -252,7 +255,6 @@ elif menu == "🖥️ Supervision":
     st.markdown("<h1>🖥️ Vue d'ensemble des Simulateurs</h1>", unsafe_allow_html=True)
     
     # Sélecteur de jour pour la supervision
-    choix_j_sup = st.sidebar.selectbox("Jour à superviser", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
     d_sup = week_days[jours_fr_liste.index(choix_j_sup)]
     
     st.info(f"Visualisation de tous les simulateurs pour le **{choix_j_sup} {d_sup.strftime('%d/%m/%Y')}**")
