@@ -214,35 +214,39 @@ if menu == "📅 Planning":
         # --- QUICK BOOKING CONDITIONNEL ---
         if is_admin:
             with st.expander("⚡ RÉSERVATION RAPIDE", expanded=False):
-               with st.form("quick_booking"):
-            c1, c2 = st.columns(2)
-            q_eq = c1.text_input("Équipage", placeholder="Nom")
-            q_hr = c2.text_input("Horaire", placeholder="08h00 - 10h00")
+              with st.form("quick_booking"):
+                c1, c2 = st.columns(2)
+                q_eq = c1.text_input("Équipage", placeholder="Nom")
+                q_hr = c2.text_input("Horaire", placeholder="08h00 - 10h00")
             
-            # Case de confirmation (invisible par défaut, s'active si besoin)
-            force_confirm = st.checkbox("Confirmer le doublon (si équipage déjà sur un autre simu)")
+                # Case de confirmation (invisible par défaut, s'active si besoin)
+                force_confirm = st.checkbox("Confirmer le doublon (si équipage déjà sur un autre simu)")
             
-            submit = st.form_submit_button("Vérifier et valider")
-
-            if submit:
-                if q_eq and q_hr:
-                    status, msg = verifier_conflit(df, d, q_hr, simu_sel, q_eq)
+                submit = st.form_submit_button("Vérifier et valider")
+    
+                if submit:
+                    if q_eq and q_hr:
+                        # On passe bien q_eq à la fonction pour vérifier les doubles
+                        status, msg = verifier_conflit(df, d, q_hr, simu_sel, q_eq)
                     
-                    if status == "block":
+                        if status == "block":
                         st.error(f"❌ {msg}")
                     
-                    elif status == "warn" and not force_confirm:
+                        elif status == "warn" and not force_confirm:
                         # Si doublon détecté SANS la case cochée
                         st.warning(f"⚠️ {msg}")
                         st.info("Veuillez cocher la case 'Confirmer le doublon' ci-dessus pour valider quand même.")
                     
-                    else:
-                        # Cas "ok" OU (cas "warn" ET case cochée)
-                        requests.post(SCRIPT_URL, data=json.dumps({
-                            "action":"add", "date":d.strftime("%d/%m/%Y"),
-                            "equipage":q_eq.upper(), "horaire":q_hr, "simu":simu_sel
-                        }))
-                        st.success("✅ Réservation enregistrée !"), time.sleep(1), st.rerun()
+                        else:
+                            # Cas "ok" OU (cas "warn" ET case cochée)
+                            requests.post(SCRIPT_URL, data=json.dumps({
+                                "action":"add", 
+                                "date":d.strftime("%d/%m/%Y"),
+                                "equipage":q_eq.upper(), 
+                                "horaire":q_hr, 
+                                "simu":simu_sel
+                            }))
+                            st.success("✅ Réservation enregistrée !"), time.sleep(1), st.rerun()
 
     else:
         # MODE SEMAINE
