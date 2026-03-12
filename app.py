@@ -454,24 +454,6 @@ elif menu == "🔐 Administration":
             else:
                 st.warning("Veuillez remplir tous les champs.")
 
-        # --- ICI ON EST HORS DU FORMULAIRE (aligné sur le 'with') ---
-        if st.session_state.get('confirm_add_doublon'):
-            st.info("ℹ️ Cliquez ci-dessous pour forcer l'ajout en doublon.")
-            if st.button("👍 Confirmer le doublon volontaire"):
-                conf = st.session_state['confirm_add_doublon']
-                requests.post(SCRIPT_URL, data=json.dumps({
-                    "action":"add",
-                    "date":conf['date'].strftime("%d/%m/%Y"),
-                    "equipage":conf['eq'].upper(),
-                    "horaire":conf['hr'],
-                    "simu":conf['sm']
-                }))
-                del st.session_state['confirm_add_doublon'] # On nettoie la session
-                st.success("✅ Doublon ajouté !"), time.sleep(1), st.rerun()
-            
-            else:
-                st.warning("Veuillez remplir tous les champs.")
-
         with tab2:
             if not df_filtre_admin.empty:
                 idx_mod = st.selectbox("Sélectionner le créneau", df_filtre_admin.index, format_func=lambda i: f"{df.loc[i,'Date']} | {df.loc[i,'Equipage']} ({df.loc[i,'Horaire']})")
