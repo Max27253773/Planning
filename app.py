@@ -193,8 +193,8 @@ if menu == "📅 Planning":
                 with st.form("quick_booking"):
                     c1, c2 = st.columns(2)
                     q_eq = c1.text_input("Équipage")
-                    q_hr = c2.text_input("Horaire", placeholder="08:00 - 10:00")
-                    if st.form_submit_button("Valider la réservation"):
+                    q_hr = c2.text_input("Horaire", placeholder="08h00 - 10h00")
+                    if st.form_submit_button("Vérifier et valider la réservation"):
                         if q_eq and q_hr:
                             # On utilise la fonction conflit que tu as déjà
                             conf, msg = verifier_conflit(df, d, q_hr, simu_sel)
