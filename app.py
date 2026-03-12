@@ -123,7 +123,7 @@ st.sidebar.markdown(
     <div style='text-align: center; color: #666666; font-size: 0.8rem; padding: 10px;'>
         © 2026 <b>Maxime JAMAIN</b><br>
         Tous droits réservés<br>
-        <span style='font-size: 0.7rem;'>Version 2.0 - Planning </span>
+        <span style='font-size: 0.7rem;'>Version Bêta - Planning </span>
     </div>
     """, 
     unsafe_allow_html=True
