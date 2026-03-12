@@ -2,15 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-# ==========================================
-# 1. INITIALISATION DU NETTOYEUR
-# ==========================================
-# Ces lignes empêchent les boutons de confirmation de rester affichés par erreur
-if 'pending_add' not in st.session_state:
-    st.session_state['pending_add'] = None
-
-if 'pending_mod' not in st.session_state:
-    st.session_state['pending_mod'] = None
 import re
 import json
 import io
