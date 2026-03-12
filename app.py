@@ -1,5 +1,5 @@
 import streamlit as st
-import pd as pd
+import pandas as pd
 import requests
 import time
 import re
@@ -142,7 +142,6 @@ if menu == "📅 Planning":
                 grid_style = "grid-line-hour" if is_pile else "grid-line-min"
                 
                 if mode_vue == "Jour":
-                    # LOGIQUE JOUR : Cellules pleines (plus de décalage possible)
                     content = "&nbsp;"
                     is_in_slot = False
                     for _, r in resas.iterrows():
@@ -158,7 +157,6 @@ if menu == "📅 Planning":
                         st.markdown(f"<div class='{grid_style}'>&nbsp;</div>", unsafe_allow_html=True)
                 
                 else:
-                    # LOGIQUE SEMAINE : On garde les blocs flottants comme demandé
                     html_bloc = ""
                     for _, r in resas.iterrows():
                         h_deb, h_fin = extraire_heures(r['Horaire'])
@@ -168,7 +166,6 @@ if menu == "📅 Planning":
                     
                     st.markdown(f"<div style='position:relative; width:100%; height:45px;'><div class='{grid_style}'>&nbsp;</div>{html_bloc}</div>", unsafe_allow_html=True)
 
-# --- STATS ET ADMIN INCHANGÉS ---
 elif menu == "📊 Statistiques":
     st.markdown("<h1>📊 Statistiques</h1>", unsafe_allow_html=True)
     if not df.empty:
@@ -219,12 +216,3 @@ elif menu == "🔐 Administration":
                     es = st.selectbox("Simu", s_list, index=s_list.index(current_s) if current_s in s_list else 0)
                     if st.form_submit_button("Mettre à jour"):
                         requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee.upper(),"horaire":eh,"simu":es}))
-                        st.success("📝 Modifié !"), time.sleep(1), st.rerun()
-        with tab3:
-            if not df.empty:
-                t = st.selectbox("Ligne à supprimer", df.index, format_func=format_resa)
-                if st.button("❌ Supprimer définitivement", disabled=not st.checkbox("Confirmer la suppression")):
-                    requests.post(SCRIPT_URL, data=json.dumps({"action":"delete","row":int(t)+2}))
-                    st.success("🗑️ Supprimé !"), time.sleep(1), st.rerun()
-    else:
-        st.error("🔑 Entrez le mot de passe dans la barre latérale.")
