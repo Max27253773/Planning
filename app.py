@@ -424,14 +424,21 @@ elif menu == "🔐 Administration":
                         
                         if status == "block":
                             st.error(f"❌ {msg}")
+                        elif status == "warn":
+                            st.warning(f"⚠️ {msg}")
+                            st.session_state['confirm_add_doublon'] = {"date":d_add, "eq":eq_add, "hr":hr_add, "sm":sm_add}
                         else:
-                            if status == "warn":
-                                st.warning(f"⚠️ {msg}")
-                                st.info("En tant qu'admin, vous pouvez valider malgré ce doublon.")
-                            
-                            # On enregistre car ce n'est pas un blocage machine
+                            # Cas OK : on ajoute direct
                             requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d_add.strftime("%d/%m/%Y"),"equipage":eq_add.upper(),"horaire":hr_add,"simu":sm_add}))
                             st.success("✅ Réservation validée !"), time.sleep(1), st.rerun()
+
+                # Bouton de confirmation spécifique pour l'admin en cas de doublon
+                if st.session_state.get('confirm_add_doublon'):
+                    if st.button("👍 Confirmer le doublon volontaire"):
+                        conf = st.session_state['confirm_add_doublon']
+                        requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":conf['date'].strftime("%d/%m/%Y"),"equipage":conf['eq'].upper(),"horaire":conf['hr'],"simu":conf['sm']}))
+                        del st.session_state['confirm_add_doublon']
+                        st.success("✅ Doublon ajouté par l'admin !"), time.sleep(1), st.rerun()
                     else:
                         st.warning("Veuillez remplir tous les champs.")
 
@@ -448,13 +455,20 @@ elif menu == "🔐 Administration":
                         
                         if status == "block":
                             st.error(f"❌ MODIFICATION IMPOSSIBLE : {msg}")
+                        elif status == "warn":
+                            st.warning(f"⚠️ {msg}")
+                            st.session_state['confirm_mod_doublon'] = {"row":int(idx_mod)+2, "date":ed, "eq":ee, "hr":eh, "sm":es}
                         else:
-                            if status == "warn":
-                                st.warning(f"⚠️ {msg}")
-                            
-                            # On enregistre la modification
                             requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx_mod)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee.upper(),"horaire":eh,"simu":es}))
                             st.success("📝 Modification enregistrée !"), time.sleep(1), st.rerun()
+
+                # Bouton de confirmation de modification pour l'admin
+                if st.session_state.get('confirm_mod_doublon'):
+                    if st.button("👍 Confirmer la modification en doublon"):
+                        conf = st.session_state['confirm_mod_doublon']
+                        requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":conf['row'],"date":conf['date'].strftime("%d/%m/%Y"),"equipage":conf['eq'].upper(),"horaire":conf['hr'],"simu":conf['sm']}))
+                        del st.session_state['confirm_mod_doublon']
+                        st.success("📝 Modification forcée effectuée !"), time.sleep(1), st.rerun()
             else:
                 st.warning("Aucun créneau à modifier cette semaine.")
 
