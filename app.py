@@ -20,6 +20,7 @@ SIMU_CONFIG = {
     "PERSEE": "#558B2F", "SAGITTAIRE": "#4A148C"
 }
 
+# On s'arrête à 20:00 (le dernier créneau 20:00-20:30) pour éviter la ligne vide de 20:30
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 st.set_page_config(page_title="⚓ Planning", layout="wide")
@@ -66,55 +67,41 @@ mode_vue = st.sidebar.segmented_control("Format", ["Semaine", "Jour"], default="
 
 monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).weekday())) + timedelta(weeks=semaine_sel-1)
 week_days = [monday + timedelta(days=i) for i in range(5)]
+jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 
 current_color = SIMU_CONFIG.get(simu_sel, "#000000")
 text_on_color = "#000000" if simu_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
-# --- CSS MIXTE ---
+# --- CSS COMPLET ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #E2E8F0 !important; border-right: 2px solid #000000 !important; }}
+    h1 {{ font-size: 1.8rem !important; font-weight: 900 !important; color: #000000 !important; }}
     
-    /* Style pour le mode JOUR (Cadre fixe) */
+    /* Mode Jour : Cadre fixe */
     .planning-frame {{
-        position: relative;
-        width: 100%;
-        background: #FFFFFF;
-        height: 1350px; 
-        border: 1px solid #000;
-        margin-bottom: 50px;
+        position: relative; width: 100%; background: #FFFFFF;
+        height: 1305px; border: 1px solid #000; margin-bottom: 30px;
     }}
     .hour-row-fixed {{
-        position: absolute;
-        left: 0; right: 0;
-        height: 45px;
-        display: flex;
-        align-items: center;
-        border-bottom: 1px dashed #CCC;
-        box-sizing: border-box;
+        position: absolute; left: 0; right: 0; height: 45px;
+        display: flex; align-items: center; border-bottom: 1px dashed #CCC; box-sizing: border-box;
     }}
     
-    /* Style pour le mode SEMAINE (Grille flexible) */
-    .slot-container-week {{
-        position: relative;
-        width: 100%;
-        height: 45px;
-        box-sizing: border-box;
-    }}
+    /* Mode Semaine : Grille flexible */
+    .slot-container-week {{ position: relative; width: 100%; height: 45px; box-sizing: border-box; }}
     .grid-line-hour {{ border-bottom: 2px solid #333333 !important; height: 45px; box-sizing: border-box; }}
     .grid-line-min {{ border-bottom: 1px dashed #777777 !important; height: 45px; box-sizing: border-box; }}
 
-    /* Style commun pour les blocs */
     .calendar-cell-unique {{ 
-        position: absolute; 
-        z-index: 100; 
-        border: 2px solid #000000; 
+        position: absolute; z-index: 100; border: 2px solid #000000; 
         color: {text_on_color} !important; text-align: center; font-weight: 900; 
         display: flex; align-items: center; justify-content: center; 
-        box-shadow: 2px 2px 0px rgba(0,0,0,1);
-        box-sizing: border-box;
+        box-shadow: 2px 2px 0px rgba(0,0,0,1); box-sizing: border-box;
     }}
+    
+    .stButton button {{ width: 100% !important; font-weight: bold !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -126,16 +113,15 @@ if menu == "📅 Planning":
     st.markdown(f"<h1>⚓ {simu_sel}</h1>", unsafe_allow_html=True)
     
     if mode_vue == "Jour":
-        choix_jour = st.sidebar.selectbox("Choisir le jour", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"], 
+        choix_jour = st.sidebar.selectbox("Choisir le jour", jours_fr_liste, 
                                         index=min(jour_actuel_idx, 4) if annee_sel == annee_actuelle and semaine_sel == semaine_actuelle else 0)
-        jour_idx = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"].index(choix_jour)
+        jour_idx = jours_fr_liste.index(choix_jour)
         d = week_days[jour_idx]
         
-        st.markdown(f"<div style='text-align:center; background-color:{current_color}; color:{text_on_color}; padding:8px; font-weight:900; border:2px solid black; box-shadow: 2px 2px 0px black; margin-bottom:10px;'>{d.strftime('%A %d/%m')}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align:center; background-color:{current_color}; color:{text_on_color}; padding:8px; font-weight:900; border:2px solid black; box-shadow: 2px 2px 0px black; margin-bottom:10px;'>{choix_jour} {d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
         
         html_jour = '<div class="planning-frame">'
         for i, q in enumerate(QUARTS_HEURES):
-            if q == "20:30": continue
             top = i * 45
             style = "border-bottom: 2px solid #333;" if q.endswith(":00") else ""
             html_jour += f'<div class="hour-row-fixed" style="top:{top}px; {style}"><div style="width:60px; text-align:right; padding-right:8px; font-weight:900; border-right:3px solid {current_color}; background:#F0F2F6; height:100%; display:flex; align-items:center; justify-content:flex-end;">{q}</div></div>'
@@ -151,18 +137,15 @@ if menu == "📅 Planning":
         st.markdown(html_jour, unsafe_allow_html=True)
 
     else:
-        # MODE SEMAINE (Version originale avec colonnes)
-        jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+        # MODE SEMAINE
         cols = st.columns([0.6] + [1]*5)
         for i, d in enumerate(week_days):
-            cols[i+1].markdown(f"<div style='text-align:center; background-color:{current_color}; color:{text_on_color}; padding:8px; font-weight:900; border:2px solid black; box-shadow: 2px 2px 0px black;'>{jours_fr[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
+            cols[i+1].markdown(f"<div style='text-align:center; background-color:{current_color}; color:{text_on_color}; padding:8px; font-weight:900; border:2px solid black; box-shadow: 2px 2px 0px black;'>{jours_fr_liste[i]}<br>{d.strftime('%d/%m')}</div>", unsafe_allow_html=True)
 
         for q in QUARTS_HEURES:
-            if q == "20:30": continue
             row_cols = st.columns([0.6] + [1]*5)
             is_pile = q.endswith(":00")
             h_act = int(q.split(':')[0]) + int(q.split(':')[1])/60
-            
             border_style = f"border-right:4px solid {current_color};" if is_pile else "border-right:1px solid #CCC;"
             row_cols[0].markdown(f"<div style='height:45px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; font-weight:900; {border_style}'>{q}</div>", unsafe_allow_html=True)
             
@@ -175,7 +158,6 @@ if menu == "📅 Planning":
                         if h_deb == h_act:
                             hauteur_px = int((h_fin - h_deb) * 2 * 45) - 2
                             html_bloc += f'<div class="calendar-cell-unique" style="top:1px; left:2px; right:2px; height:{hauteur_px}px; background-color:{current_color}; font-size:10px;">{r["Equipage"]}</div>'
-                    
                     grid_class = 'grid-line-hour' if is_pile else 'grid-line-min'
                     st.markdown(f"<div class='slot-container-week'><div class='{grid_class}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
@@ -188,11 +170,13 @@ elif menu == "📊 Statistiques":
         df['Duree_H'] = df['Horaire'].apply(calcul_duree)
         df['Mois'] = df['Date_DT'].dt.strftime('%m - %B')
         df['Annee'] = df['Date_DT'].dt.year
+
         st.subheader("📁 Volume horaire par équipage (Mensuel)")
         mois_dispo = sorted(df['Mois'].unique())
         mois_sel = st.selectbox("Mois", mois_dispo, index=len(mois_dispo)-1)
         stats_equipage = df[df['Mois'] == mois_sel].groupby('Equipage')['Duree_H'].sum().reset_index()
         st.dataframe(stats_equipage.sort_values(by='Duree_H', ascending=False), use_container_width=True, hide_index=True)
+
         st.divider()
         st.subheader("🖥️ Utilisation des simulateurs (Annuel)")
         stats_simu = df[df['Annee'] == annee_sel].groupby('Simu')['Duree_H'].sum().sort_values(ascending=False)
@@ -204,11 +188,13 @@ elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
     st.sidebar.subheader("🔒 Accès Restreint")
     pwd = st.sidebar.text_input("Saisir le mot de passe", type="password")
+    
     if pwd == ADMIN_PASSWORD:
         tab1, tab2, tab3 = st.tabs(["➕ Ajouter", "📝 Modifier", "🗑️ Supprimer"])
         def format_resa(idx):
             r = df.loc[idx]
             return f"{r['Date']} | {r['Horaire']} | {r['Simu']} | {r['Equipage']}"
+        
         with tab1:
             with st.form("a", clear_on_submit=True):
                 d = st.date_input("Date", value=datetime.now())
