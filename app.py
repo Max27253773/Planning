@@ -463,12 +463,24 @@ elif menu == "🔐 Administration":
                     eh = st.text_input("Horaire", df.loc[idx_mod,'Horaire'])
                     es = st.selectbox("Simu", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx_mod,'Simu']).strip().upper()))
                     if st.form_submit_button("Vérifier et Enregistrer"):
-                        conflit, msg = verifier_conflit(df, ed, eh, es, exclude_idx=idx_mod)
-                        if conflit:
+                        status, msg = verifier_conflit(df, ed, eh, es, ee, exclude_idx=idx_mod)
+                        
+                        if status == "block":
                             st.error(f"❌ MODIFICATION IMPOSSIBLE : {msg}")
+                        elif status == "warn":
+                            st.warning(f"⚠️ {msg}")
+                            st.session_state['confirm_mod_doublon'] = {"row":int(idx_mod)+2, "date":ed, "eq":ee, "hr":eh, "sm":es}
                         else:
                             requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx_mod)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee.upper(),"horaire":eh,"simu":es}))
                             st.success("📝 Modification enregistrée !"), time.sleep(1), st.rerun()
+
+                # Bouton de confirmation de modification pour l'admin
+                if st.session_state.get('confirm_mod_doublon'):
+                    if st.button("👍 Confirmer la modification en doublon"):
+                        conf = st.session_state['confirm_mod_doublon']
+                        requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":conf['row'],"date":conf['date'].strftime("%d/%m/%Y"),"equipage":conf['eq'].upper(),"horaire":conf['hr'],"simu":conf['sm']}))
+                        del st.session_state['confirm_mod_doublon']
+                        st.success("📝 Modification forcée effectuée !"), time.sleep(1), st.rerun()
             else:
                 st.warning("Aucun créneau à modifier cette semaine.")
 
