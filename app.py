@@ -439,7 +439,7 @@ elif menu == "🔐 Administration":
         # --- ICI ON EST HORS DU FORMULAIRE (aligné sur le 'with') ---
         if st.session_state.get('confirm_add_doublon'):
             st.info("ℹ️ Cliquez ci-dessous pour forcer l'ajout en doublon.")
-            if st.button("👍 Confirmer le doublon volontaire"):
+            if st.button("👍 Confirmer le doublon volontaire", key="confirm_add"):
                 conf = st.session_state['confirm_add_doublon']
                 requests.post(SCRIPT_URL, data=json.dumps({
                     "action":"add",
