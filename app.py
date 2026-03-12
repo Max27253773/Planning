@@ -93,7 +93,7 @@ df = load_data()
 menu = st.sidebar.radio("MENU", ["📅 Planning","🔍 Trouver ses créneaux", "📊 Statistiques", "🔐 Administration"])
 
 # --- CONNEXION ADMIN GLOBALE ---
-st.sidebar.title("🔐 Accès Admin")
+st.sidebar.title("🔐 Accès ADMIN")
 admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
 is_admin = (admin_key == ADMIN_PASSWORD)
 
