@@ -180,25 +180,23 @@ if menu == "📅 Planning":
         
         resas = df_view[df_view['Date_DT'].dt.date == d.date()]
         for _, r in resas.iterrows():
-            h_deb, h_fin = extraire_heures(r['Horaire'])
+            h_deb, h_f = extraire_heures(r['Horaire'])
             if h_deb is not None:
-                top_pos = int((h_deb - 6) * 90)
-                hauteur = int((h_fin - h_deb) * 90) - 2
-                html_jour += f'<div class="calendar-cell-unique" style="top:{top_pos}px; height:{hauteur}px; left:65px; right:5px; background-color:{current_color}; font-size:14px;">{r["Equipage"]}</div>'
-        html_jour += '</div>'
-        st.markdown(html_jour, unsafe_allow_html=True)
+                top_p = int((h_deb - 6) * 90)
+                haut = int((h_f - h_deb) * 90) - 2
+                html_jour += f'<div class="calendar-cell-unique" style="top:{top_p}px; height:{haut}px; left:65px; right:5px; background-color:{current_color}; font-size:14px;">{r["Equipage"]}</div>'
+        st.markdown(html_jour + '</div>', unsafe_allow_html=True)
 
-        # --- SECTION QUICK BOOKING (ADMIN UNIQUEMENT) ---
-        # On vérifie si le mot de passe saisi en sidebar est le bon
-        if st.session_state.get('password_input') == ADMIN_PASSWORD or (pwd == ADMIN_PASSWORD if 'pwd' in locals() else False):
-            with st.expander("⚡ Réservation Rapide (Admin)", expanded=False):
-                with st.form("quick_form"):
-                    col1, col2 = st.columns(2)
-                    q_eq = col1.text_input("Équipage")
-                    q_hr = col2.text_input("Horaire", placeholder="ex: 14:00 - 16:00")
-                    
-                    if st.form_submit_button("Réserver immédiatement"):
+        # --- QUICK BOOKING CONDITIONNEL ---
+        if is_admin:
+            with st.expander("⚡ RÉSERVATION RAPIDE", expanded=False):
+                with st.form("quick_booking"):
+                    c1, c2 = st.columns(2)
+                    q_eq = c1.text_input("Équipage")
+                    q_hr = c2.text_input("Horaire", placeholder="08:00 - 10:00")
+                    if st.form_submit_button("Valider la réservation"):
                         if q_eq and q_hr:
+                            # On utilise la fonction conflit que tu as déjà
                             conf, msg = verifier_conflit(df, d, q_hr, simu_sel)
                             if conf:
                                 st.error(msg)
@@ -210,7 +208,7 @@ if menu == "📅 Planning":
                                     "horaire":q_hr,
                                     "simu":simu_sel
                                 }))
-                                st.success("C'est fait !"), time.sleep(1), st.rerun()
+                                st.success("Ajouté !"), time.sleep(1), st.rerun()
 
     else:
         # MODE SEMAINE
