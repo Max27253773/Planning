@@ -420,13 +420,16 @@ elif menu == "🔐 Administration":
                 sm_add = st.selectbox("Simu", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(simu_sel))
                 if st.form_submit_button("Vérifier et Ajouter"):
                     if eq_add and hr_add:
-                        # ON AJOUTE 'eq_add' À LA FIN ICI
                         status, msg = verifier_conflit(df, d_add, hr_add, sm_add, eq_add)
                         
                         if status == "block":
                             st.error(f"❌ {msg}")
                         else:
-                            # On ajoute même si c'est "warn" car c'est l'admin
+                            if status == "warn":
+                                st.warning(f"⚠️ {msg}")
+                                st.info("En tant qu'admin, vous pouvez valider malgré ce doublon.")
+                            
+                            # On enregistre car ce n'est pas un blocage machine
                             requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d_add.strftime("%d/%m/%Y"),"equipage":eq_add.upper(),"horaire":hr_add,"simu":sm_add}))
                             st.success("✅ Réservation validée !"), time.sleep(1), st.rerun()
                     else:
@@ -441,12 +444,15 @@ elif menu == "🔐 Administration":
                     eh = st.text_input("Horaire", df.loc[idx_mod,'Horaire'])
                     es = st.selectbox("Simu", list(SIMU_CONFIG.keys()), index=list(SIMU_CONFIG.keys()).index(str(df.loc[idx_mod,'Simu']).strip().upper()))
                     if st.form_submit_button("Vérifier et Enregistrer"):
-                        # ON AJOUTE 'ee' À LA FIN ICI
                         status, msg = verifier_conflit(df, ed, eh, es, ee, exclude_idx=idx_mod)
                         
                         if status == "block":
                             st.error(f"❌ MODIFICATION IMPOSSIBLE : {msg}")
                         else:
+                            if status == "warn":
+                                st.warning(f"⚠️ {msg}")
+                            
+                            # On enregistre la modification
                             requests.post(SCRIPT_URL, data=json.dumps({"action":"update","row":int(idx_mod)+2,"date":ed.strftime("%d/%m/%Y"),"equipage":ee.upper(),"horaire":eh,"simu":es}))
                             st.success("📝 Modification enregistrée !"), time.sleep(1), st.rerun()
             else:
