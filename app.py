@@ -207,6 +207,48 @@ if menu == "📅 Planning":
                     grid_class = 'grid-line-hour' if is_pile else 'grid-line-min'
                     st.markdown(f"<div class='slot-container-week'><div class='{grid_class}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
+elif menu == "🔍 Trouver ses créneaux":
+    st.markdown("<h1>🔍 Rechercher par Équipage</h1>", unsafe_allow_html=True)
+    
+    # Zone de recherche
+    nom_cherche = st.text_input("Entrez le nom de l'équipage (ex: ARMADA)", "").upper()
+    
+    if nom_cherche:
+        # Filtrage sur le nom, l'année et la semaine sélectionnée en sidebar
+        mask = (
+            (df['Equipage'].str.contains(nom_cherche, na=False, case=False)) &
+            (df['Date_DT'].dt.isocalendar().week == semaine_sel) &
+            (df['Date_DT'].dt.year == annee_sel)
+        )
+        resultats = df[mask].sort_values(by=['Date_DT', 'Horaire'])
+
+        if not resultats.empty:
+            st.success(f"Nombre de créneau(x) trouvé(s) : {len(resultats)}")
+            
+            # Affichage sous forme de "Cartes" pour mobile
+            for idx, r in resultats.iterrows():
+                with st.container():
+                    col_sim, col_info = st.columns([0.2, 0.8])
+                    color = SIMU_CONFIG.get(r['Simu'].strip().upper(), "#333")
+                    
+                    # Petit carré de couleur du simulateur
+                    col_sim.markdown(f"""
+                        <div style="background-color:{color}; height:60px; border-radius:10px; 
+                        border:2px solid black; display:flex; align-items:center; justify-content:center;">
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Détails de la réservation
+                    col_info.markdown(f"""
+                        **{r['Date']}** — <span style="color:{color}; font-weight:bold;">{r['Simu']}</span><br>
+                        ⌚ **{r['Horaire']}**
+                        """, unsafe_allow_html=True)
+                    st.divider()
+        else:
+            st.warning(f"Aucune réservation trouvée pour '{nom_cherche}' en semaine {semaine_sel}.")
+    else:
+        st.info("Saisissez un nom pour voir votre planning de la semaine.")
+        
 elif menu == "📊 Statistiques":
     st.markdown("<h1>📊 Statistiques</h1>", unsafe_allow_html=True)
     if not df.empty:
