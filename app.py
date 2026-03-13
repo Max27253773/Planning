@@ -48,40 +48,6 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-import streamlit as st
-import streamlit.components.v1 as components
-
-# --- 1. SCRIPT DE PERSISTANCE (JS) ---
-# Ce script s'exécute en arrière-plan pour charger le favori dès l'ouverture
-def init_local_storage():
-    js = """
-    <script>
-        const savedName = localStorage.getItem('favori_equipage');
-        if (savedName) {
-            const params = new URLSearchParams(window.location.search);
-            if (!params.has('fav')) {
-                window.parent.postMessage({type: 'streamlit:set_query_params', query_params: {fav: savedName}}, '*');
-            }
-        }
-    </script>
-    """
-    components.html(js, height=0)
-
-def save_locally(value):
-    js = f"<script>localStorage.setItem('favori_equipage', '{value}');</script>"
-    components.html(js, height=0)
-
-# --- 2. LOGIQUE DE RÉCUPÉRATION ---
-init_local_storage() # On lance la vérification du stockage au démarrage
-
-# On récupère le favori soit dans l'URL (mis par le JS) soit en session
-url_fav = st.query_params.get("fav", "")
-if url_fav and 'nom_favori' not in st.session_state:
-    st.session_state.nom_favori = url_fav
-
-if 'nom_favori' not in st.session_state:
-    st.session_state.nom_favori = ""
-
 # --- CONFIGURATION FIXE ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
@@ -390,88 +356,46 @@ elif menu == "🖥️ Supervision":
     st.caption("💡 Astuce : Sur mobile, faites glisser le tableau vers la droite pour voir tous les simulateurs.")
 
 elif menu == "🔍 Rechercher":
-    # --- 1. FONCTIONS DE STOCKAGE ---
-    def save_locally(value):
-        # Enregistre et force l'URL pour que Streamlit le voit
-        js = f"""
-        <script>
-            localStorage.setItem('favori_equipage', '{value}');
-            const url = new URL(window.location.href);
-            url.searchParams.set('fav', '{value}');
-            window.parent.location.href = url.href;
-        </script>
-        """
-        components.html(js, height=0)
-
-    # Script de lecture automatique au démarrage
-    def load_locally_js():
-        js = """
-        <script>
-            const saved = localStorage.getItem('favori_equipage');
-            const params = new URLSearchParams(window.location.search);
-            if (saved && params.get('fav') !== saved) {
-                const url = new URL(window.location.href);
-                url.searchParams.set('fav', saved);
-                window.parent.location.href = url.href;
-            }
-        </script>
-        """
-        components.html(js, height=0)
-
-    # --- 2. LECTURE DU FAVORI ---
-    load_locally_js() # On lance la lecture JS
-    
-    # On récupère ce que le JS a mis dans l'URL
-    url_fav = st.query_params.get("fav", "")
-    
-    # Initialisation de la session
-    if 'nom_favori' not in st.session_state:
-        st.session_state.nom_favori = url_fav if url_fav else ""
-
     st.markdown("<h1>🔍 Rechercher par Équipage</h1>", unsafe_allow_html=True)
     
-    # --- 3. INTERFACE ---
-    col_input, col_fav = st.columns([0.82, 0.18])
+    # Zone de recherche
+    nom_cherche = st.text_input("Entrez le nom de l'équipage (ex: ECOLE)", "").upper()
     
-    with col_input:
-        # Le champ utilise la valeur de l'URL récupérée par le JS
-        nom_cherche = st.text_input(
-            "Nom de l'équipage :", 
-            value=st.session_state.nom_favori,
-            placeholder="ex: ECOLE"
-        ).upper()
-    
-    with col_fav:
-        st.markdown('<div style="padding-top: 28px;"></div>', unsafe_allow_html=True)
-        if st.button("⭐"):
-            if nom_cherche:
-                save_locally(nom_cherche) # Sauvegarde dans le téléphone + rafraîchissement
-            else:
-                st.error("Vide")
-
-    # --- 4. RÉSULTATS ---
-    # On donne la priorité au texte tapé, sinon au favori
-    recherche_active = nom_cherche if nom_cherche else st.session_state.nom_favori
-
-    if recherche_active:
+    if nom_cherche:
+        # Filtrage sur le nom, l'année et la semaine sélectionnée en sidebar
         mask = (
-            (df['Equipage'].str.contains(recherche_active, na=False, case=False)) &
+            (df['Equipage'].str.contains(nom_cherche, na=False, case=False)) &
             (df['Date_DT'].dt.isocalendar().week == semaine_sel) &
             (df['Date_DT'].dt.year == annee_sel)
         )
         resultats = df[mask].sort_values(by=['Date_DT', 'Horaire'])
 
         if not resultats.empty:
-            st.success(f"Planning pour : {recherche_active} ({len(resultats)} créneaux)")
+            st.success(f"Nombre de créneau(x) trouvé(s) : {len(resultats)}")
+            
+            # Affichage sous forme de "Cartes" pour mobile
             for idx, r in resultats.iterrows():
                 with st.container():
                     col_sim, col_info = st.columns([0.2, 0.8])
                     color = SIMU_CONFIG.get(r['Simu'].strip().upper(), "#333")
-                    col_sim.markdown(f'<div style="background-color:{color}; height:60px; border-radius:10px; border:2px solid black;"></div>', unsafe_allow_html=True)
-                    col_info.markdown(f"**{r['Date']}** — <span style='color:{color}; font-weight:bold;'>{r['Simu']}</span><br>⌚ **{r['Horaire']}**", unsafe_allow_html=True)
+                    
+                    # Petit carré de couleur du simulateur
+                    col_sim.markdown(f"""
+                        <div style="background-color:{color}; height:60px; border-radius:10px; 
+                        border:2px solid black; display:flex; align-items:center; justify-content:center;">
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Détails de la réservation
+                    col_info.markdown(f"""
+                        **{r['Date']}** — <span style="color:{color}; font-weight:bold;">{r['Simu']}</span><br>
+                        ⌚ **{r['Horaire']}**
+                        """, unsafe_allow_html=True)
                     st.divider()
         else:
-            st.warning(f"Aucun créneau pour '{recherche_active}' cette semaine.")
+            st.warning(f"Aucune réservation trouvée pour '{nom_cherche}' en semaine {semaine_sel}.")
+    else:
+        st.info("Saisissez un nom pour voir votre planning de la semaine.")
 
 elif menu == "📊 Statistiques":
     st.markdown("<h1>📊 Statistiques</h1>", unsafe_allow_html=True)
