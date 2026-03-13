@@ -54,8 +54,8 @@ placeholder.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# On attend 4 secondes
-time.sleep(4)
+# On attend 5 secondes
+time.sleep(5)
 
 # On vide le conteneur pour faire disparaître le bandeau
 placeholder.empty()
