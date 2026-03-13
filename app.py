@@ -390,30 +390,32 @@ elif menu == "🖥️ Supervision":
     st.caption("💡 Astuce : Sur mobile, faites glisser le tableau vers la droite pour voir tous les simulateurs.")
 
 elif menu == "🔍 Rechercher":
-    # --- 1. FONCTIONS TECHNIQUES (LE PONT) ---
+    # --- 1. FONCTIONS JS (ZÉRO INSTALLATION) ---
     def save_locally(value):
         js = f"<script>localStorage.setItem('favori_equipage', '{value}');</script>"
         components.html(js, height=0)
 
-    # Ce script récupère le stockage et le renvoie à Streamlit via l'URL
+    # Script qui lit le téléphone et met à jour l'URL si besoin
     def sync_local_storage():
         js = """
         <script>
             var saved = localStorage.getItem('favori_equipage');
-            if (saved && !window.location.href.includes('fav=')) {
-                const url = new URL(window.location.href);
-                url.searchParams.set('fav', saved);
-                window.location.href = url.href;
+            var params = new URLSearchParams(window.location.search);
+            if (saved && params.get('fav') !== saved) {
+                params.set('fav', saved);
+                window.location.search = params.toString();
             }
         </script>
         """
         components.html(js, height=0)
 
-    # --- 2. INITIALISATION AU DÉMARRAGE ---
-    sync_local_storage() # On tente de lire le téléphone
+    # --- 2. RÉCUPÉRATION AUTOMATIQUE ---
+    sync_local_storage() # Le téléphone parle à l'URL
     
-    # On récupère le nom dans l'URL (si le pont a fonctionné) ou on garde le vide
+    # Python lit l'URL
     url_fav = st.query_params.get("fav", "")
+    
+    # Si on a trouvé un favori dans l'URL, on l'utilise pour remplir le champ
     if 'nom_favori' not in st.session_state:
         st.session_state.nom_favori = url_fav
 
@@ -423,10 +425,9 @@ elif menu == "🔍 Rechercher":
     col_input, col_fav = st.columns([0.82, 0.18])
     
     with col_input:
-        # On affiche le favori récupéré s'il existe
         nom_cherche = st.text_input(
             "Entrez le nom de l'équipage :", 
-            value=st.session_state.nom_favori,
+            value=st.session_state.nom_favori, # Se remplit tout seul !
             placeholder="ex: ECOLE"
         ).upper()
     
@@ -434,18 +435,21 @@ elif menu == "🔍 Rechercher":
         st.markdown('<div style="padding-top: 28px;"></div>', unsafe_allow_html=True)
         if st.button("⭐"):
             if nom_cherche:
-                st.session_state.nom_favori = nom_cherche
                 save_locally(nom_cherche)
-                st.toast(f"Favori '{nom_cherche}' enregistré !")
-                # On force la mise à jour de l'URL pour la prochaine fois
+                st.session_state.nom_favori = nom_cherche
+                st.success(f"Favori '{nom_cherche}' enregistré !")
+                # On met à jour l'URL immédiatement
                 st.query_params["fav"] = nom_cherche
             else:
                 st.error("Vide")
 
-    # --- 4. FILTRAGE ET RÉSULTATS ---
-    if nom_cherche:
+    # --- 4. AFFICHAGE DES RÉSULTATS ---
+    # On utilise soit ce qui est tapé, soit le favori récupéré
+    nom_final = nom_cherche if nom_cherche else st.session_state.nom_favori
+
+    if nom_final:
         mask = (
-            (df['Equipage'].str.contains(nom_cherche, na=False, case=False)) &
+            (df['Equipage'].str.contains(nom_final, na=False, case=False)) &
             (df['Date_DT'].dt.isocalendar().week == semaine_sel) &
             (df['Date_DT'].dt.year == annee_sel)
         )
@@ -461,9 +465,9 @@ elif menu == "🔍 Rechercher":
                     col_info.markdown(f"**{r['Date']}** — <span style='color:{color}; font-weight:bold;'>{r['Simu']}</span><br>⌚ **{r['Horaire']}**", unsafe_allow_html=True)
                     st.divider()
         else:
-            st.warning(f"Aucune réservation trouvée pour '{nom_cherche}'.")
+            st.warning(f"Aucun créneau pour '{nom_final}' cette semaine.")
     else:
-        st.info("Saisissez un nom ou cliquez sur ⭐ pour mémoriser.")
+        st.info("Saisissez un nom et cliquez sur ⭐ pour mémoriser votre équipage sur ce téléphone.")
 
 elif menu == "📊 Statistiques":
     st.markdown("<h1>📊 Statistiques</h1>", unsafe_allow_html=True)
