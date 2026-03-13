@@ -8,10 +8,22 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
-# --- LOGO EN HAUT DE LA SIDEBAR ---
-# Remplace l'URL ci-dessous par le lien de ton image hébergée
-st.sidebar.image("Logo.jpg", use_container_width=True)
-st.sidebar.markdown("---") # Petite ligne de séparation
+# --- TITRE INTERSTELLAR DANS LA SIDEBAR ---
+st.sidebar.markdown(
+    """
+    <div style="background: linear-gradient(90deg, #FF4B4B 0%, #1C83E1 100%); 
+                padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);">
+        <h1 style="font-size: 18px; color: white; margin: 0; letter-spacing: 2px;">
+            🌌 INTERSTELLAR GATE
+        </h1>
+        <p style="font-size: 10px; color: rgba(255,255,255,0.8); margin: 5px 0 0 0; font-weight: bold;">
+            STATION DE CONTRÔLE
+        </p>
+    </div>
+    <br>
+    """, 
+    unsafe_allow_html=True
+)
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="⚓ Planning", layout="wide")
