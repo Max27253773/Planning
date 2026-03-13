@@ -14,7 +14,7 @@ st.sidebar.markdown(
     <div style="background: linear-gradient(90deg, #0026C7 0%, #FFFFFF 40%, #FFFFFF 60%, #C70000 100%); 
                 padding: 3px; border-radius: 3px; text-align: center; 
                 width: 50%; margin: 0 auto;">
-            <p style="font-size: 9px !important; color: black; margin: 0; letter-spacing: 1px; text-transform: uppercase; font-family: 'Web Safe Fonts';">
+            <p style="font-size: 9px !important; color: black; margin: 0; letter-spacing: 1px; text-transform: uppercase; font-family: 'Impact';">
                 ⌬ IO
             </p>
         </div>
@@ -121,7 +121,7 @@ def load_data():
 
 # --- INTERFACE ---
 df = load_data()
-menu = st.sidebar.radio("MENU", ["📅 Planning", "🖥️ Supervision", "🔍 Trouver ses créneaux", "📊 Statistiques", "🔐 Administration"])
+menu = st.sidebar.radio("MENU", ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques", "🔐 Administration"])
 
 # --- CONNEXION ADMIN GLOBALE ---
 st.sidebar.title("🔐 Accès ADMIN")
@@ -355,7 +355,7 @@ elif menu == "🖥️ Supervision":
     # Petite légende
     st.caption("💡 Astuce : Sur mobile, faites glisser le tableau vers la droite pour voir tous les simulateurs.")
 
-elif menu == "🔍 Trouver ses créneaux":
+elif menu == "🔍 Rechercher":
     st.markdown("<h1>🔍 Rechercher par Équipage</h1>", unsafe_allow_html=True)
     
     # Zone de recherche
