@@ -8,6 +8,11 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
+# --- LOGO EN HAUT DE LA SIDEBAR ---
+# Remplace l'URL ci-dessous par le lien de ton image hébergée
+st.sidebar.image("https://fr.pinterest.com/pin/9359111721572292/", use_container_width=True)
+st.sidebar.markdown("---") # Petite ligne de séparation
+
 # --- CONFIGURATION ---
 st.set_page_config(page_title="⚓ Planning", layout="wide")
 
