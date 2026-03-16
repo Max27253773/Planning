@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Planning", layout="wide")
+st.set_page_config(page_title="IO", layout="wide")
 
 # --- SYSTÈME D'AUTHENTIFICATION UNIQUE ---
 def check_auth():
