@@ -54,10 +54,10 @@ SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5Fe
 ADMIN_PASSWORD = "1234" 
 
 LOCAL_CONFIG = {
-    "JUPITER": "#1976D2", "MINERVE": "#C2185B", "JUNON": "#757575",
-    "BACCHUS": "#388E3C", "MARS": "#D32F2F", "SATURNE": "#E65100",
-    "CRONOS": "#A1887F", "NEKKAR": "#C5A000", "PHOBOS": "#DAA520",
-    "PERSEE": "#558B2F", "SAGITTAIRE": "#4A148C"
+    "JUP": "#1976D2", "MIN": "#C2185B", "JUN": "#757575",
+    "BAC": "#388E3C", "MARS": "#D32F2F", "SAT": "#E65100",
+    "CRO": "#A1887F", "NEK": "#C5A000", "PHO": "#DAA520",
+    "PERS": "#558B2F", "SAG": "#4A148C"
 }
 
 # Liste arrêtée à 20:00 pile pour supprimer la ligne 20:30
