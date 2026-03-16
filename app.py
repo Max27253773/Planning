@@ -168,7 +168,7 @@ week_days = [monday + timedelta(days=i) for i in range(5)]
 d = week_days[jours_fr_liste.index(choix_j_global)]
 
 current_color = LOCAL_CONFIG.get(local_sel, "#000000")
-text_on_color = "#000000" if LOCAL_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
+text_on_color = "#000000" if local_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
 # --- CSS COMPLET ---
 st.markdown(f"""
