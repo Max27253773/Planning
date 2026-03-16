@@ -8,6 +8,39 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Planning", layout="wide")
+
+# --- SYSTÈME D'AUTHENTIFICATION UNIQUE ---
+def check_auth():
+    """Formulaire d'accueil avec Identifiant et Mot de passe"""
+    def validate():
+        # --- MODIFIE TES IDENTIFIANTS ICI ---
+        ID_VALIDE = "UT" 
+        MDP_VALIDE = "Azerty123*"
+        
+        if (st.session_state["user_input"].upper() == ID_VALIDE and 
+            st.session_state["pass_input"] == MDP_VALIDE):
+            st.session_state["authenticated"] = True
+        else:
+            st.session_state["authenticated"] = False
+            st.error("❌ Identifiant ou mot de passe incorrect.")
+
+    if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+        st.markdown("<h1 style='text-align:center;'>🔐 Accès Restreint</h1>", unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            with st.container(border=True):
+                st.text_input("Identifiant", key="user_input")
+                st.text_input("Mot de passe", type="password", key="pass_input")
+                st.button("Entrer sur le site", on_click=validate, use_container_width=True)
+        return False
+    return True
+
+# --- SI AUTHENTIFIÉ, ON LANCE LE RESTE ---
+if check_auth():
+
 # --- TITRE IO DANS LA SIDEBAR ---
 st.sidebar.markdown(
     """
@@ -23,10 +56,7 @@ st.sidebar.markdown(
     """, 
     unsafe_allow_html=True
 )
-
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Planning", layout="wide")
-
+    
 # --- BANDEAU D'ALERTE FORCE (VISIBLE EN MODE SOMBRE) ---
 st.markdown("""
     <div style="
