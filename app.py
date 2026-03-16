@@ -51,7 +51,7 @@ def check_auth():
     """, unsafe_allow_html=True)
     
     def validate():
-        # --- COMPTE UTILISATEUR ---
+        # --- COMPTES ---
         ID_VALIDE = "UT" 
         MDP_VALIDE = "Azerty123*"
         
