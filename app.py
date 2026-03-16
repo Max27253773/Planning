@@ -205,7 +205,7 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-df_view = df[df['Simu'].str.strip().str.upper() == local_sel.upper()]
+df_view = df[df['Local'].str.strip().str.upper() == local_sel.upper()]
 
 # --- NAVIGATION ---
 
