@@ -210,7 +210,7 @@ df_view = df[df['Local'].str.strip().str.upper() == local_sel.upper()]
 # --- NAVIGATION ---
 
 if menu == "📅 Planning":
-    st.markdown(f"<h1>⚓ {local_sel}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1>{local_sel}</h1>", unsafe_allow_html=True)
     if mode_vue == "Jour":
         # On utilise choix_j_global qui vient de la sidebar
         d = week_days[jours_fr_liste.index(choix_j_global)]
