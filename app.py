@@ -92,7 +92,7 @@ def verifier_conflit(df, date_test, horaire_test, local_test, equipe_test, exclu
     
     # 1. Vérification local (Bloquant)
     match_simu = df[(df['Date_DT'].dt.date == date_test_dt.date()) & 
-                    (df['Local'].str.strip().str.upper() == simu_test.upper())]
+                    (df['Local'].str.strip().str.upper() == local_test.upper())]
     for idx, row in match_simu.iterrows():
         if exclude_idx is not None and idx == exclude_idx: continue
         h_deb_ex, h_fin_ex = extraire_heures(row['Horaire'])
