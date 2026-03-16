@@ -63,7 +63,7 @@ def check_auth():
             st.error("❌ Identifiant ou mot de passe incorrect.")
 
     if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-        st.markdown("<h1 style='text-align:center;'>🔐 ⌬ ACCÈS IO</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center;'>⌬ ACCÈS IO</h1>", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
