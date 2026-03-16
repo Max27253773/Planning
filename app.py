@@ -415,7 +415,7 @@ elif menu == "📊 Statistiques":
 
         st.divider()
         st.subheader("🖥️ Utilisation des locaux (Annuel)")
-        stats_simu = df[df['Annee'] == annee_sel].groupby('Local')['Duree_H'].sum().sort_values(ascending=False)
+        stats_local = df[df['Annee'] == annee_sel].groupby('Local')['Duree_H'].sum().sort_values(ascending=False)
         st.bar_chart(stats_local)
     else:
         st.warning("Aucune donnée.")
