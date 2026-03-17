@@ -67,7 +67,7 @@ if not st.session_state["auth"]:
             if user_input in credentials and pw_input == credentials[user_input]["pw"]:
                 st.session_state["auth"] = True
                 st.session_state["role"] = credentials[user_input]["role"]
-                st.success(f"Bienvenue, rôle : {st.session_state['role']}")
+                st.success(f"Accès au, rôle : {st.session_state['role']}")
                 time.sleep(0.5)
                 st.rerun()
             else:
