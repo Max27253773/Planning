@@ -532,12 +532,13 @@ elif menu == "📊 Statistiques":
 
 elif menu == "🎯 Assignation Responsables":
     st.header(f"🎯 Attribution des Responsables - Semaine {semaine_sel}")
+    st.info("Utilisez les onglets pour naviguer entre les jours. Saisissez le nom du responsable sous l'équipe concernée.")
     
     # 1. Configuration des axes (Locaux et Horaires)
     tous_les_locaux = sorted(df['Local'].unique())
     tous_les_horaires = sorted(df['Horaire'].unique())
     
-    # 2. Création des onglets : UNIQUEMENT LUNDI AU VENDREDI
+    # 2. Création des onglets : LUNDI AU VENDREDI UNIQUEMENT
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     onglets = st.tabs(jours_semaine)
 
@@ -549,11 +550,15 @@ elif menu == "🎯 Assignation Responsables":
             st.subheader(f"Planning du {jour}")
             
             # Calcul de la date exacte pour ce jour de la semaine
-            base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
-            date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
+            try:
+                base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
+                date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
+            except:
+                st.error("Erreur de calcul de date. Vérifiez l'année et la semaine.")
+                continue
 
             # --- En-tête du tableau ---
-            # On ajuste la largeur : 1 part pour l'heure, 3 parts par simulateur
+            # On ajuste la largeur : 1.5 pour l'heure, 3 parts égales par simulateur
             cols_header = st.columns([1.5] + [3] * len(tous_les_locaux))
             cols_header[0].write("**🕒 Horaire**")
             for j, local in enumerate(tous_les_locaux):
@@ -565,11 +570,11 @@ elif menu == "🎯 Assignation Responsables":
             for heure in tous_les_horaires:
                 row_cols = st.columns([1.5] + [3] * len(tous_les_locaux))
                 
-                # Colonne Heure (plus visible)
+                # Colonne Heure
                 row_cols[0].markdown(f"### `{heure}`")
 
                 for j, local in enumerate(tous_les_locaux):
-                    # Filtre la réservation
+                    # Filtre pour trouver la réservation
                     mask = (df['Date_DT'].dt.date == date_cible) & \
                            (df['Horaire'] == heure) & \
                            (df['Local'] == local) & \
@@ -580,20 +585,28 @@ elif menu == "🎯 Assignation Responsables":
                     with row_cols[j+1]:
                         if not resa.empty:
                             equipe = resa.iloc[0]['Equipe']
+                            # Sécurité : on vérifie si la colonne Responsable existe
                             current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
                             
-                            # On encadre la zone de saisie pour la différencier du reste
                             st.markdown(f"**👤 {equipe}**")
+                            
+                            # Champ de saisie
                             new_val = st.text_input(
                                 "Responsable",
                                 value=current_resp,
                                 key=f"res_{date_cible}_{heure}_{local}",
                                 label_visibility="collapsed",
-                                placeholder="Nom du responsable..."
+                                placeholder="Nom..."
                             )
                             
-                            # Si la valeur change, on pourrait afficher un petit indicateur
-                            if new_val != current_resp and
+                            # Indicateur de modification (Syntaxe corrigée sur une seule ligne)
+                            if new_val != current_resp and new_val != "":
+                                st.caption("✨ Prêt à enregistrer")
+                        else:
+                            # Créneau libre
+                            st.write("") 
+                
+                st.write("---") # Séparateur entre les tranches horaires
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
