@@ -15,7 +15,7 @@ st.set_page_config(page_title="IO", layout="wide", initial_sidebar_state="expand
 if "auth" not in st.session_state:
     st.session_state["auth"] = False
 
-# --- 3. LOGIQUE VISUELLE DE CONNEXION ---
+# --- LOGIQUE VISUELLE DE CONNEXION ---
 if not st.session_state["auth"]:
     st.markdown("""
         <style>
@@ -26,20 +26,30 @@ if not st.session_state["auth"]:
             max-width: 450px !important;
             margin: auto;
         }
+        /* Style du cadre */
         div[data-testid="stForm"] {
             border: 2px solid #000000 !important;
             border-radius: 15px !important;
             padding: 40px !important;
-            background-color: #FDFDFD !important;
-            box-shadow: 10px 10px 0px #000000 !important;
+            background-color: #FFFFFF !important;
+            box-shadow: 10px 10px 0px #0026C7 !important;
         }
+        /* BOUTON "SE CONNECTER" ULTRA VISIBLE */
         button[kind="primaryFormSubmit"] {
-            background-color: #0026C7 !important;
+            background-color: #0026C7 !important; /* Bleu IO */
             color: white !important;
             border: 2px solid #000000 !important;
             width: 100% !important;
-            font-weight: bold !important;
-            height: 3rem !important;
+            font-weight: 900 !important; /* Texte très gras */
+            font-size: 18px !important;
+            height: 3.5rem !important;
+            text-transform: uppercase !important;
+            transition: 0.3s !important;
+        }
+        /* Effet au survol du bouton */
+        button[kind="primaryFormSubmit"]:hover {
+            background-color: #C70000 !important; /* Devient rouge au survol */
+            transform: scale(1.02) !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -52,15 +62,15 @@ if not st.session_state["auth"]:
     """, unsafe_allow_html=True)
 
     with st.form("login_form"):
-        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0;'>CONNEXION</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0;'>IDENTIFICATION</h2>", unsafe_allow_html=True)
         user_input = st.text_input("Identifiant")
         pw_input = st.text_input("Mot de passe", type="password")
-        submit_auth = st.form_submit_button("ACCÉDER AU PLANNING")
+        submit_auth = st.form_submit_button("SE CONNECTER") # Nouveau texte
         
         if submit_auth:
             if user_input == "UT" and pw_input == "Azerty123*":
                 st.session_state["auth"] = True
-                st.success("Accès validé...")
+                st.success("Connexion...")
                 time.sleep(0.5)
                 st.rerun()
             else:
