@@ -212,26 +212,29 @@ def load_data():
 # --- INTERFACE ---
 df = load_data()
 # --- 1. DÉFINITION DU MENU DE BASE ---
-# Ces options sont visibles par TOUT LE MONDE (UT et ANIM)
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# --- 2. LOGIQUE POUR L'ANIMATEUR ---
+# --- 2. AJOUT DE L'ASSIGNATION (RESERVÉ ANIMATEUR) ---
 if st.session_state.get("role") == "Animateur":
-    # On ajoute l'assignation pour l'Animateur
     menus_de_base.insert(1, "🎯 Assignation Responsables")
+
+# --- 3. AFFICHAGE DU MENU RADIO ---
+menu = st.sidebar.radio("MENU", menus_de_base)
+
+# --- 4. POSITIONNEMENT ADMIN EN DESSOUS (RESERVÉ ANIMATEUR) ---
+if st.session_state.get("role") == "Animateur":
+    st.sidebar.markdown("---")  # Trait de séparation
+    st.sidebar.subheader("🔐 Accès ADMIN")
     
-    st.sidebar.divider()
-    st.sidebar.subheader("🔐 Zone Sécurisée")
-    
-    # Champ pour la clé admin (réservé à l'animateur)
-    admin_key = st.sidebar.text_input("Clé Admin", type="password")
-    
-    # On vérifie la clé pour débloquer l'administration
+    admin_key = st.sidebar.text_input("Saisir la clé", type="password", key="key_admin")
+
     if admin_key == ADMIN_PASSWORD:
-        menus_de_base.append("🔐 Administration")
-        st.sidebar.success("Mode Admin activé")
-    elif admin_key != "":
-        st.sidebar.error("Clé incorrecte")
+        st.sidebar.success("Clé valide")
+        # On ajoute l'option Administration uniquement si la clé est bonne
+        if st.sidebar.checkbox("🔓 Afficher l'onglet Admin"):
+            # On force l'ajout dans la liste et on change la valeur de 'menu'
+            if "🔐 Administration" not in menus_de_base:
+                menu = "🔐 Administration"
 
 # --- 3. AFFICHAGE FINAL DU MENU ---
 # Cette ligne crée le menu radio avec les options filtrées plus haut
