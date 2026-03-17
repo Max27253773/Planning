@@ -12,50 +12,56 @@ from PIL import Image, ImageDraw, ImageFont
 st.set_page_config(
     page_title="IO", 
     layout="wide", 
-    initial_sidebar_state="expanded" # L'autre option est "auto" ou "collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # --- SYSTÈME D'AUTHENTIFICATION UNIQUE ---
 def check_auth():
-    """Formulaire d'accueil avec Identifiant et Mot de passe"""
+    """Formulaire d'accueil stylisé avec gestion du Header"""
 
-    # --- CSS PERSONNALISÉ POUR LA CONNEXION ---
-    st.markdown("""
-        <style>
-        /* Masquer le menu Streamlit et le header sur la page de login */
-        #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
+    # 1. Vérification initiale de l'état
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
 
-        /* Style du conteneur de login */
-        .login-box {
-            background-color: #ffffff;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border: 1px solid #f0f2f6;
-            text-align: center;
-            margin-top: 5vh;
-        }
-        
-        /* Personnalisation du bouton */
-        .stButton>button {
-            background-color: #0026C7 !important;
-            color: white !important;
-            border-radius: 8px !important;
-            height: 3em !important;
-            transition: 0.3s !important;
-            font-weight: bold !important;
-        }
-        .stButton>button:hover {
-            background-color: #C70000 !important;
-            border-color: #C70000 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
+    # 2. APPLICATION DU CSS SELON L'ÉTAT
+    if not st.session_state["authenticated"]:
+        # STYLE PAGE DE CONNEXION
+        st.markdown("""
+            <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;} /* Cache le header pour un look pro au login */
+            footer {visibility: hidden;}
+            .stApp { background-color: white; }
+            
+            .login-box {
+                background-color: #ffffff;
+                padding: 2rem;
+                border-radius: 15px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                border: 1px solid #f0f2f6;
+                text-align: center;
+                margin-top: 5vh;
+            }
+            
+            .stButton>button {
+                background-color: #0026C7 !important;
+                color: white !important;
+                border-radius: 8px !important;
+                height: 3em !important;
+                font-weight: bold !important;
+                width: 100%;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+    else:
+        # STYLE PAGE CONNECTÉE (On réactive le header pour la sidebar)
+        st.markdown("""
+            <style>
+            header { visibility: visible !important; } 
+            </style>
+        """, unsafe_allow_html=True)
+
     def validate():
-        # --- COMPTES ---
         ID_VALIDE = "UT" 
         MDP_VALIDE = "Azerty123*"
         
@@ -66,33 +72,30 @@ def check_auth():
             st.session_state["authenticated"] = False
             st.error("❌ Identifiant ou mot de passe incorrect.")
 
-   if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-    st.markdown("""
-        <style>
-        /* On ne cache le header QUE si on n'est pas connecté */
-        header { visibility: hidden; }
-        .stApp { background-color: white; }
-        </style>
-    """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-            <style>
-            /* Une fois connecté, on s'assure que le bouton de la sidebar est visible */
-            header { visibility: visible !important; }
-            </style>
-        """, unsafe_allow_html=True)
-    
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            with st.container(border=True):
-                st.text_input("Identifiant", key="user_input")
-                st.text_input("Mot de passe", type="password", key="pass_input")
-                st.button("Entrer sur le site", on_click=validate, use_container_width=True)
+    # 3. AFFICHAGE DU FORMULAIRE SI NON CONNECTÉ
+    if not st.session_state["authenticated"]:
+        _, col_mid, _ = st.columns([1, 2, 1])
+        with col_mid:
+            st.markdown("""
+                <div class="login-box">
+                    <h1 style='color: #0026C7; font-family: Impact;'>⌬ ACCÈS IO</h1>
+                    <p style='color: #666;'>Entrez vos identifiants</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            with st.container():
+                st.text_input("Identifiant", key="user_input", placeholder="Ex:UTILISATEUR")
+                st.text_input("Mot de passe", type="password", key="pass_input", placeholder="••••••••")
+                st.button("SE CONNECTER", on_click=validate)
         return False
+    
     return True
 
-# --- SI AUTHENTIFIÉ, ON LANCE LE RESTE ---
+# --- LANCEMENT DE L'APPLICATION ---
 if check_auth():
+    # Ton code principal commence ici (Sidebar, Planning, etc.)
+    st.sidebar.title("IO")
+    # ...
 
     # --- TITRE IO DANS LA SIDEBAR ---
     st.sidebar.markdown(
