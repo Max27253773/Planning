@@ -220,7 +220,7 @@ if st.session_state.get("role") == "Animateur":
 
 # --- 3. Ensuite, on vérifie le rôle pour insérer l'option ---
 if st.session_state.get("role") == "Animateur":
-    menus_de_base.insert(1, "🔐 Administration")
+    menus_de_base.insert(5, "🔐 Administration")
 
 # --- 3. Enfin, on affiche le menu ---
 menu = st.sidebar.radio("MENU", menus_de_base)
