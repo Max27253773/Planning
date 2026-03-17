@@ -214,20 +214,23 @@ df = load_data()
 # --- 1. DÉFINITION DU MENU DE BASE ---
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# --- 2. AJOUT DE L'ASSIGNATION (RESERVÉ ANIMATEUR) ---
+# --- 2. LOGIQUE POUR L'ANIMATEUR ---
 if st.session_state.get("role") == "Animateur":
+    # On ajoute l'assignation pour tous les animateurs
     menus_de_base.insert(1, "🎯 Assignation Responsables")
     
-    # --- 3. AJOUT DE L'ADMIN (RESERVÉ ANIMATEUR + CLÉ VALIDE) ---
     st.sidebar.divider()
     st.sidebar.subheader("🔐 Zone Sécurisée")
+    
+    # On crée le champ pour la clé admin
     admin_key = st.sidebar.text_input("Clé Admin", type="password")
     
+    # Si la clé est bonne, on ajoute l'onglet Administration
     if admin_key == ADMIN_PASSWORD:
         menus_de_base.append("🔐 Administration")
         st.sidebar.success("Mode Admin activé")
 
-# --- 4. AFFICHAGE DU MENU RADIO ---
+# --- 3. AFFICHAGE DU MENU RADIO ---
 menu = st.sidebar.radio("MENU", menus_de_base)
 
 if is_admin:
