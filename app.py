@@ -17,27 +17,18 @@ if "auth" not in st.session_state:
 
 # --- 3. CSS DE PROTECTION (FORCE LA VISIBILITÉ DE LA SIDEBAR) ---
 st.markdown("""
-        <style>
-        /* Cache la sidebar et le header au démarrage */
-        [data-testid="stSidebar"] { visibility: hidden; transform: translateX(-100%); }
-        header { visibility: hidden; }
-        
-        /* Centre le bloc de connexion verticalement et horizontalement */
-        .block-container {
-            padding-top: 10rem !important;
-            max-width: 450px !important;
-            margin: auto;
-        }
-        
-        /* Style du formulaire pour le faire ressortir */
-        div[data-testid="stForm"] {
-            border: 2px solid #000000;
-            border-radius: 10px;
-            box-shadow: 5px 5px 0px rgba(0,0,0,1);
-            background-color: #F8F9FA;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+    .stApp { background-color: #FFFFFF !important; }
+    /* Force l'affichage du bouton de la barre latérale en bleu */
+    .st-emotion-cache-6q9sum.ef3ps4o4 { 
+        visibility: visible !important; 
+        display: block !important; 
+        fill: #0026C7 !important; 
+    }
+    header { visibility: visible !important; }
+    [data-testid="stSidebar"] { background-color: #E2E8F0 !important; border-right: 2px solid #000000 !important; }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 4. ÉLÉMENTS FIXES DE LA SIDEBAR (LOGO TOUJOURS VISIBLE) ---
 st.sidebar.markdown(
