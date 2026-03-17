@@ -8,7 +8,29 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
-# --- TITRE IO DANS LA SIDEBAR ---
+# --- 1. CONFIGURATION (DOIT ÊTRE EN TOUT PREMIER) ---
+st.set_page_config(page_title="Planning IO", layout="wide", initial_sidebar_state="expanded")
+
+# --- 2. INITIALISATION DE LA SESSION ---
+if "auth" not in st.session_state:
+    st.session_state["auth"] = False
+
+# --- 3. CSS DE PROTECTION (FORCE LA VISIBILITÉ DE LA SIDEBAR) ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #FFFFFF !important; }
+    /* Force l'affichage du bouton de la barre latérale en bleu */
+    .st-emotion-cache-6q9sum.ef3ps4o4 { 
+        visibility: visible !important; 
+        display: block !important; 
+        fill: #0026C7 !important; 
+    }
+    header { visibility: visible !important; }
+    [data-testid="stSidebar"] { background-color: #E2E8F0 !important; border-right: 2px solid #000000 !important; }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- 4. ÉLÉMENTS FIXES DE LA SIDEBAR (LOGO TOUJOURS VISIBLE) ---
 st.sidebar.markdown(
     """
     <div style="background: linear-gradient(90deg, #0026C7 0%, #FFFFFF 40%, #FFFFFF 60%, #C70000 100%); 
@@ -24,8 +46,40 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Planning", layout="wide")
+# --- 5. LOGIQUE DE CONNEXION ---
+if not st.session_state["auth"]:
+    st.markdown("### 🔐 Accès au Planning IO")
+    with st.form("login_form"):
+        user_input = st.text_input("Identifiant")
+        pw_input = st.text_input("Mot de passe", type="password")
+        submit_auth = st.form_submit_button("Se connecter")
+        
+        if submit_auth:
+            # Remplace par tes vrais identifiants
+            if user_input == "UT" and pw_input == "Azerty123*":
+                st.session_state["auth"] = True
+                st.success("Connexion réussie !")
+                st.rerun()
+            else:
+                st.error("Identifiants incorrects")
+    st.info("Veuillez vous identifier pour accéder aux plannings et à la supervision.")
+    st.stop() # Arrête le script ici tant qu'on n'est pas connecté
+
+# --- TITRE IO DANS LA SIDEBAR ---
+st.sidebar.markdown(
+    """
+    <div style="background: linear-gradient(90deg, #0026C7 0%, #FFFFFF 40%, #FFFFFF 60%, #C70000 100%); 
+                padding: 3px; border-radius: 3px; text-align: center; 
+                width: 50%; margin: 0 auto;">
+            <p style="font-size: 9px !important; color: black; margin: 0; letter-spacing: 1px; text-transform: uppercase; font-family: 'Impact';">
+                ⌬ IO
+            </p>
+        </div>
+    </div>
+    <br>
+    """, 
+    unsafe_allow_html=True
+)
 
 # --- BANDEAU D'ALERTE FORCE (VISIBLE EN MODE SOMBRE) ---
 st.markdown("""
