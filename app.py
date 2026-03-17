@@ -5,6 +5,22 @@ import io
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
+# --- 1. CONFIGURATION (TOUJOURS EN PREMIER) ---
+st.set_page_config(
+    page_title="IO", 
+    layout="wide", 
+    initial_sidebar_state="expanded"
+)
+
+# --- 2. SUPPRESSION DU CACHE CSS BLOQUANT ---
+# Ce bloc force le header à être visible pour retrouver ta barre latérale
+st.markdown("""
+    <style>
+    header { visibility: visible !important; }
+    #MainMenu { visibility: visible !important; }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- TITRE IO DANS LA SIDEBAR ---
 st.sidebar.markdown(
     """
@@ -20,9 +36,6 @@ st.sidebar.markdown(
     """, 
     unsafe_allow_html=True
 )
-
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Planning", layout="wide")
 
 # --- BANDEAU D'ALERTE FORCE (VISIBLE EN MODE SOMBRE) ---
 st.markdown("""
