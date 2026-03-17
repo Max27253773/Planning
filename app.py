@@ -84,7 +84,21 @@ def check_auth():
 
 # --- 3. LANCEMENT DE L'APPLICATION SI AUTHENTIFIÉ ---
 if check_auth():
-
+    
+# --- LE CORRECTIF DE LA BARRE LATÉRALE ---
+    st.markdown("""
+        <style>
+        /* Force l'affichage du bouton de réouverture (le chevron) */
+        .st-emotion-cache-6q9sum.ef3ps4o4 {
+            visibility: visible !important;
+            display: block !important;
+            fill: #0026C7 !important;
+            left: 10px !important;
+            top: 10px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     # --- TITRE IO DANS LA SIDEBAR ---
     st.sidebar.markdown(
         """
