@@ -465,49 +465,6 @@ elif menu == "🖥️ Supervision":
     # Petite légende
     st.caption("💡 Astuce : Sur mobile, faites glisser le tableau vers la droite pour voir tous les locaux.")
 
-elif menu == "🎯 Assignation Responsables":
-    st.header("🎯 Attribution des Responsables")
-    st.write(f"Gestion des responsables pour le local **{local_sel}** ({choix_j_global} Semaine {semaine_sel})")
-    st.divider()
-
-    # 1. On filtre les données pour n'afficher que les réservations existantes
-    if not df.empty:
-        # On calcule la date exacte sélectionnée
-        date_sel = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-{choix_j_global}", format="%G-W%V-%A").date()
-        
-        # On cherche les réservations correspondantes
-        mask = (df['Date_DT'].dt.date == date_sel) & (df['Local'] == local_sel)
-        reservations_actives = df[mask].copy()
-
-        if not reservations_actives.empty:
-            st.info(f"Il y a {len(reservations_actives)} créneau(x) à pourvoir pour cette journée.")
-            
-            # Création d'un petit tableau d'assignation
-            for idx, row in reservations_actives.iterrows():
-                with st.container():
-                    col1, col2, col3 = st.columns([2, 3, 2])
-                    
-                    with col1:
-                        st.markdown(f"**🕒 {row['Horaire']}**")
-                        st.caption(f"Équipe : {row['Equipe']}")
-                    
-                    with col2:
-                        # On récupère le responsable actuel s'il existe déjà dans une colonne 'Responsable'
-                        valeur_actuelle = row['Responsable'] if 'Responsable' in row and pd.notna(row['Responsable']) else ""
-                        nom_resp = st.text_input(f"Nom du responsable", value=valeur_actuelle, key=f"input_{idx}")
-                    
-                    with col3:
-                        st.write("") # Espace pour l'alignement
-                        st.write("") 
-                        if st.button("💾 Enregistrer", key=f"btn_{idx}"):
-                            # Ici on appellera la fonction pour mettre à jour Google Sheets
-                            st.success(f"Enregistré : {nom_resp}")
-                    st.divider()
-        else:
-            st.warning("Aucune réservation trouvée pour ce jour et ce local. Rien à assigner.")
-    else:
-        st.error("Impossible de charger les données pour l'assignation.")
-
 elif menu == "🔍 Rechercher":
     st.markdown("<h1>🔍 Rechercher par Équipe</h1>", unsafe_allow_html=True)
     
@@ -572,6 +529,68 @@ elif menu == "📊 Statistiques":
         st.bar_chart(stats_local)
     else:
         st.warning("Aucune donnée.")
+
+elif menu == "🎯 Assignation Responsables":
+    st.header(f"🎯 Grille d'Assignation - Semaine {semaine_sel}")
+    st.info("Saisissez les noms des responsables pour chaque créneau réservé. Les cases vides correspondent aux créneaux libres.")
+
+    # 1. Préparation des jours de la semaine
+    jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    creneaux_horaires = sorted(df['Horaire'].unique()) # Récupère tous les horaires (ex: 08h-10h, etc.)
+
+    # 2. Création de la grille visuelle
+    # On crée une ligne d'en-tête pour les jours
+    cols = st.columns([1] + [2] * 7) # 1 col pour l'heure, 7 cols pour les jours
+    
+    cols[0].write("**Horaire**")
+    for i, jour in enumerate(jours_semaine):
+        cols[i+1].write(f"**{jour}**")
+
+    st.divider()
+
+    # 3. Remplissage de la grille
+    for heure in creneaux_horaires:
+        row_cols = st.columns([1] + [2] * 7)
+        row_cols[0].markdown(f"**{heure}**") # Affichage de l'heure à gauche
+
+        for i, jour in enumerate(jours_semaine):
+            # Calcul de la date pour ce jour précis afin de filtrer le DF
+            jours_trad = {"Lundi":0, "Mardi":1, "Mercredi":2, "Jeudi":3, "Vendredi":4, "Samedi":5, "Dimanche":6}
+            base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
+            date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
+
+            # On cherche si une réservation existe pour ce jour, cette heure et ce local
+            mask = (df['Date_DT'].dt.date == date_cible) & \
+                   (df['Horaire'] == heure) & \
+                   (df['Local'] == local_sel) & \
+                   (df['Equipe'].notna()) & (df['Equipe'] != "Libre")
+            
+            resa = df[mask]
+
+            with row_cols[i+1]:
+                if not resa.empty:
+                    # Si réservé, on affiche l'équipe et un champ de saisie pour le responsable
+                    equipe_nom = resa.iloc[0]['Equipe']
+                    current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
+                    
+                    st.caption(f"👥 {equipe_nom}")
+                    val = st.text_input(
+                        "Resp.", 
+                        value=current_resp, 
+                        key=f"res_{heure}_{jour}", 
+                        label_visibility="collapsed"
+                    )
+                    
+                    # Petit bouton de sauvegarde rapide par case ou on peut imaginer un bouton global
+                    if val != current_resp:
+                        if st.button("OK", key=f"save_{heure}_{jour}"):
+                            # Ici la logique d'envoi vers Google Sheets
+                            st.success("Enregistré")
+                else:
+                    # Si libre, on laisse la case vide ou grisée
+                    st.markdown("---")
+
+    st.sidebar.warning("N'oubliez pas de valider chaque modification.")
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
