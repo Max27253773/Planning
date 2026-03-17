@@ -9,11 +9,7 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
 # --- CONFIGURATION ---
-st.set_page_config(
-    page_title="IO", 
-    layout="wide", 
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="IO", layout="wide", initial_sidebar_state="expanded")
 
 # --- 2. SYSTÈME D'AUTHENTIFICATION ---
 def check_auth():
