@@ -449,6 +449,49 @@ elif menu == "🖥️ Supervision":
     # Petite légende
     st.caption("💡 Astuce : Sur mobile, faites glisser le tableau vers la droite pour voir tous les locaux.")
 
+elif menu == "🎯 Assignation Responsables":
+    st.header("🎯 Attribution des Responsables")
+    st.write(f"Gestion des responsables pour le local **{local_sel}** ({choix_j_global} Semaine {semaine_sel})")
+    st.divider()
+
+    # 1. On filtre les données pour n'afficher que les réservations existantes
+    if not df.empty:
+        # On calcule la date exacte sélectionnée
+        date_sel = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-{choix_j_global}", format="%G-W%V-%A").date()
+        
+        # On cherche les réservations correspondantes
+        mask = (df['Date_DT'].dt.date == date_sel) & (df['Local'] == local_sel)
+        reservations_actives = df[mask].copy()
+
+        if not reservations_actives.empty:
+            st.info(f"Il y a {len(reservations_actives)} créneau(x) à pourvoir pour cette journée.")
+            
+            # Création d'un petit tableau d'assignation
+            for idx, row in reservations_actives.iterrows():
+                with st.container():
+                    col1, col2, col3 = st.columns([2, 3, 2])
+                    
+                    with col1:
+                        st.markdown(f"**🕒 {row['Horaire']}**")
+                        st.caption(f"Équipe : {row['Equipe']}")
+                    
+                    with col2:
+                        # On récupère le responsable actuel s'il existe déjà dans une colonne 'Responsable'
+                        valeur_actuelle = row['Responsable'] if 'Responsable' in row and pd.notna(row['Responsable']) else ""
+                        nom_resp = st.text_input(f"Nom du responsable", value=valeur_actuelle, key=f"input_{idx}")
+                    
+                    with col3:
+                        st.write("") # Espace pour l'alignement
+                        st.write("") 
+                        if st.button("💾 Enregistrer", key=f"btn_{idx}"):
+                            # Ici on appellera la fonction pour mettre à jour Google Sheets
+                            st.success(f"Enregistré : {nom_resp}")
+                    st.divider()
+        else:
+            st.warning("Aucune réservation trouvée pour ce jour et ce local. Rien à assigner.")
+    else:
+        st.error("Impossible de charger les données pour l'assignation.")
+
 elif menu == "🔍 Rechercher":
     st.markdown("<h1>🔍 Rechercher par Équipe</h1>", unsafe_allow_html=True)
     
