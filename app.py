@@ -52,7 +52,7 @@ if not st.session_state["auth"]:
     """, unsafe_allow_html=True)
 
     with st.form("login_form"):
-        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0;'>IDENTIFICATION</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0;'>CONNEXION</h2>", unsafe_allow_html=True)
         user_input = st.text_input("Identifiant")
         pw_input = st.text_input("Mot de passe", type="password")
         submit_auth = st.form_submit_button("SE CONNECTER")
