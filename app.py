@@ -211,27 +211,35 @@ def load_data():
 
 # --- INTERFACE ---
 df = load_data()
-# --- 1. D'abord, on définit la liste de base (Tout à gauche, pas d'espace) ---
+# --- 1. DÉFINITION DE LA LISTE DE BASE ---
+# Accessible à tout le monde
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# --- 2. Ensuite, on vérifie le rôle pour insérer l'option ---
+# --- 2. LOGIQUE RÉSERVÉE À L'ANIMATEUR ---
 if st.session_state.get("role") == "Animateur":
+    # Insertion des options supplémentaires dans la liste
     menus_de_base.insert(4, "🎯 Assignation Responsables")
-
-# --- 3. Ensuite, on vérifie le rôle pour insérer l'option ---
-if st.session_state.get("role") == "Animateur":
     menus_de_base.insert(5, "🔐 Administration")
 
-# --- 3. Enfin, on affiche le menu ---
-menu = st.sidebar.radio("MENU", menus_de_base)
+    # Affichage du menu principal
+    menu = st.sidebar.radio("MENU", menus_de_base)
 
-# --- CONNEXION ADMIN GLOBALE ---
-st.sidebar.title("🔐 Accès ADMIN")
-admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
-is_admin = (admin_key == ADMIN_PASSWORD)
+    # BLOC ACCÈS ADMIN (Visible uniquement pour l'Animateur)
+    st.sidebar.markdown("---")
+    st.sidebar.title("🔐 Accès ADMIN")
+    admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
+    
+    # Vérification de la clé
+    is_admin = (admin_key == ADMIN_PASSWORD)
+    if is_admin:
+        st.sidebar.success("Mode Administrateur Actif")
+    elif admin_key != "":
+        st.sidebar.error("Mot de passe incorrecte")
 
-if is_admin:
-    st.sidebar.success("Mode Administrateur Actif")
+else:
+    # --- 3. AFFICHAGE POUR L'UTILISATEUR SIMPLE (UT) ---
+    menu = st.sidebar.radio("MENU", menus_de_base)
+    is_admin = False # Sécurité pour bloquer les fonctions admin
 
 st.sidebar.divider()
 
