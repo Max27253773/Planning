@@ -52,8 +52,8 @@ def check_auth():
 
     def validate():
         # --- TES IDENTIFIANTS ---
-        ID_VALIDE = "PILOTE" 
-        MDP_VALIDE = "VOL2026"
+        ID_VALIDE = "UT" 
+        MDP_VALIDE = "Azerty123*"
         
         if (st.session_state["user_input"].upper() == ID_VALIDE and 
             st.session_state["pass_input"] == MDP_VALIDE):
