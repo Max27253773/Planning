@@ -127,7 +127,7 @@ st.markdown("""
         border-radius: 5px; 
         text-align: center; 
         font-weight: bold; 
-        font-size: 0.8rem; 
+        font-size: 0.7rem; 
         margin-bottom: 5px;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
     ">
