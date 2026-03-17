@@ -211,34 +211,31 @@ def load_data():
 
 # --- INTERFACE ---
 df = load_data()
-# --- 1. DÉFINITION DU MENU DE BASE ---
+# --- 1. DÉFINITION DU MENU DE BASE (VISIBLE PAR TOUS) ---
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# --- 2. AJOUT DE L'ASSIGNATION (RESERVÉ ANIMATEUR) ---
+# --- 2. AJOUT DE L'ASSIGNATION (RÉSERVÉ UNIQUEMENT À L'ANIMATEUR) ---
 if st.session_state.get("role") == "Animateur":
     menus_de_base.insert(1, "🎯 Assignation Responsables")
 
-# --- 3. AFFICHAGE DU MENU RADIO ---
+# --- 3. AFFICHAGE DU MENU RADIO PRINCIPAL ---
 menu = st.sidebar.radio("MENU", menus_de_base)
 
-# --- 4. POSITIONNEMENT ADMIN EN DESSOUS (RESERVÉ ANIMATEUR) ---
+# --- 4. BLOC ADMIN POSITIONNÉ EN DESSOUS (RÉSERVÉ ANIMATEUR) ---
 if st.session_state.get("role") == "Animateur":
-    st.sidebar.markdown("---")  # Trait de séparation
-    st.sidebar.subheader("🔐 Accès ADMIN")
+    st.sidebar.write("") # Espace visuel
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔐 Accès ADMIN")
     
-    admin_key = st.sidebar.text_input("Saisir la clé", type="password", key="key_admin")
+    # Champ pour la clé
+    admin_key = st.sidebar.text_input("Saisir la clé", type="password", key="admin_key_sidebar")
 
+    # Si la clé est correcte, on affiche le bouton pour débloquer l'onglet
     if admin_key == ADMIN_PASSWORD:
         st.sidebar.success("Clé valide")
-        # On ajoute l'option Administration uniquement si la clé est bonne
-        if st.sidebar.checkbox("🔓 Afficher l'onglet Admin"):
-            # On force l'ajout dans la liste et on change la valeur de 'menu'
-            if "🔐 Administration" not in menus_de_base:
-                menu = "🔐 Administration"
-
-# --- 3. AFFICHAGE FINAL DU MENU ---
-# Cette ligne crée le menu radio avec les options filtrées plus haut
-menu = st.sidebar.radio("MENU", menus_de_base)
+        if st.sidebar.checkbox("🔓 Afficher l'onglet Administration"):
+            # On remplace la sélection du menu par l'admin
+            menu = "🔐 Administration"
     
 st.sidebar.divider()
 
