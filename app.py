@@ -211,8 +211,7 @@ def load_data():
 
 # --- INTERFACE ---
 df = load_data()
-menu = st.sidebar.radio("MENU", ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques", "🔐 Administration"])
-
+menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 # On ajoute l'option spéciale SEULEMENT pour l'Animateur
 if st.session_state.get("role") == "Animateur":
     menus_de_base.insert(1, "🎯 Assignation Responsables") # Inséré en 2ème position
