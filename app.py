@@ -531,97 +531,73 @@ elif menu == "📊 Statistiques":
         st.warning("Aucune donnée.")
 
 elif menu == "🎯 Assignation Responsables":
-    st.header(f"🎯 Attribution des Responsables - Semaine {semaine_sel}")
+    st.header(f"🎯 Responsables - Semaine {semaine_sel}")
     
-    # 1. Configuration des axes
+    # Configuration
     tous_les_locaux = sorted(df['Local'].unique())
     tous_les_horaires = sorted(df['Horaire'].unique())
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
     
-    # 2. Création des onglets
+    # Onglets pour les jours (fonctionne bien sur mobile car ils défilent horizontalement)
     onglets = st.tabs(jours_semaine)
 
     for i, jour in enumerate(jours_semaine):
         with onglets[i]:
-            # Calcul de la date cible pour le filtrage
             base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
             date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
             
-            # Utilisation d'un formulaire pour grouper l'envoi par jour
-            with st.form(key=f"form_assign_{jour}"):
-                st.subheader(f"Planning du {jour} {date_cible.strftime('%d/%m')}")
+            with st.form(key=f"form_mobile_{jour}"):
+                st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
                 
-                # En-tête du tableau
-                cols_h = st.columns([1.5] + [3] * len(tous_les_locaux))
-                cols_h[0].write("**🕒 Horaire**")
-                for j, local in enumerate(tous_les_locaux):
-                    cols_h[j+1].write(f"**🖥️ {local}**")
-                st.divider()
-
-                # Liste pour stocker les modifications de la journée
                 updates_a_envoyer = []
 
-                # Génération des lignes par horaire
                 for heure in tous_les_horaires:
-                    row_cols = st.columns([1.5] + [3] * len(tous_les_locaux))
-                    row_cols[0].markdown(f"**{heure}**")
-
-                    for j, local in enumerate(tous_les_locaux):
-                        # Filtrage de la ligne correspondante dans le DataFrame
+                    # On affiche l'heure en grand pour séparer les sections
+                    st.markdown(f"#### 🕒 {heure}")
+                    
+                    # Pour chaque local, on crée une "carte" (un container)
+                    for local in tous_les_locaux:
                         mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
                         resa = df[mask]
 
-                        with row_cols[j+1]:
-                            # On vérifie si le créneau est réservé par une équipe
-                            if not resa.empty and resa.iloc[0]['Equipe'] not in ["Libre", "", None]:
-                                equipe = resa.iloc[0]['Equipe']
-                                # On récupère le responsable actuel (colonne E)
-                                current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
-                                
-                                st.caption(f"👥 {equipe}")
-                                # Champ de saisie (clé unique par date/heure/local)
+                        if not resa.empty and resa.iloc[0]['Equipe'] not in ["Libre", "", None]:
+                            equipe = resa.iloc[0]['Equipe']
+                            current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
+                            
+                            # Design en mode "Carte" : fond légèrement grisé pour séparer les simulateurs
+                            with st.container():
+                                # On affiche Local et Equipe sur la même ligne ou l'un sous l'autre
+                                st.markdown(f"**{local}** — 👥 *{equipe}*")
                                 resp_nom = st.text_input(
-                                    "Responsable", 
+                                    f"Responsable pour {local}", 
                                     value=current_resp, 
-                                    key=f"in_{date_cible}_{heure}_{local}", 
-                                    label_visibility="collapsed"
+                                    key=f"mob_{date_cible}_{heure}_{local}",
+                                    label_visibility="collapsed",
+                                    placeholder="Nom du responsable..."
                                 )
                                 
-                                # Préparation de l'objet de mise à jour
                                 updates_a_envoyer.append({
                                     "date": str(date_cible),
                                     "horaire": heure,
                                     "local": local,
                                     "responsable": resp_nom
                                 })
-                            else:
-                                # Correction ici : ajout du deux-points et affichage neutre
-                                st.write("-")
+                    st.markdown("---") # Séparateur entre les heures
 
-                st.write("")
-                # Bouton de soumission du formulaire
                 btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
                 
                 if btn_save:
                     if updates_a_envoyer:
-                        with st.spinner("Envoi vers Google Sheets..."):
+                        with st.spinner("Envoi..."):
                             try:
-                                payload = {
-                                    "action": "update_batch_responsables", 
-                                    "data": updates_a_envoyer
-                                }
-                                response = requests.post(SCRIPT_URL, json=payload)
-                                
+                                payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
+                                response = requests.post(URL_DU_SCRIPT, json=payload)
                                 if "Success" in response.text:
-                                    st.success(f"✅ Responsables du {jour} mis à jour !")
+                                    st.success("✅ Enregistré !")
                                     st.rerun()
-                                else:
-                                    st.error(f"Réponse du serveur : {response.text}")
                             except Exception as e:
-                                st.error(f"Erreur lors de l'envoi : {e}")
-                    else:
-                        st.warning("Aucune équipe réservée ce jour-là.")
+                                st.error(f"Erreur : {e}")
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
