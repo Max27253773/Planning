@@ -41,7 +41,7 @@ st.markdown("""
         margin-bottom: 5px;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
     ">
-        ⚠️ gt ATTENTION : PASSEZ VOTRE TÉLÉPHONE EN "MODE CLAIR"<br>
+        ⚠️ ATTENTION : PASSEZ VOTRE TÉLÉPHONE EN "MODE CLAIR"<br>
         <span style="color: #000000; font-size: 0.7rem;">
             Le mode sombre rend certains textes et plannings invisibles
         </span>
