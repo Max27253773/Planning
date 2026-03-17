@@ -211,32 +211,24 @@ def load_data():
 
 # --- INTERFACE ---
 df = load_data()
-# --- 1. DÉFINITION DU MENU DE BASE (VISIBLE PAR TOUS) ---
+# --- 1. D'abord, on définit la liste de base (Tout à gauche, pas d'espace) ---
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# --- 2. AJOUT DE L'ASSIGNATION (RÉSERVÉ UNIQUEMENT À L'ANIMATEUR) ---
+# --- 2. Ensuite, on vérifie le rôle pour insérer l'option (Aligné avec le reste) ---
 if st.session_state.get("role") == "Animateur":
     menus_de_base.insert(1, "🎯 Assignation Responsables")
 
-# --- 3. AFFICHAGE DU MENU RADIO PRINCIPAL ---
+# --- 3. Enfin, on affiche le menu ---
 menu = st.sidebar.radio("MENU", menus_de_base)
 
-# --- 4. BLOC ADMIN POSITIONNÉ EN DESSOUS (RÉSERVÉ ANIMATEUR) ---
-if st.session_state.get("role") == "Animateur":
-    st.sidebar.write("") # Espace visuel
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔐 Accès ADMIN")
-    
-    # Champ pour la clé
-    admin_key = st.sidebar.text_input("Saisir la clé", type="password", key="admin_key_sidebar")
+# --- CONNEXION ADMIN GLOBALE ---
+st.sidebar.title("🔐 Accès ADMIN")
+admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
+is_admin = (admin_key == ADMIN_PASSWORD)
 
-    # Si la clé est correcte, on affiche le bouton pour débloquer l'onglet
-    if admin_key == ADMIN_PASSWORD:
-        st.sidebar.success("Clé valide")
-        if st.sidebar.checkbox("🔓 Afficher l'onglet Administration"):
-            # On remplace la sélection du menu par l'admin
-            menu = "🔐 Administration"
-    
+if is_admin:
+    st.sidebar.success("Mode Administrateur Actif")
+
 st.sidebar.divider()
 
 # --- CALCUL AUTOMATIQUE DATE/SEMAINE ---
