@@ -17,38 +17,18 @@ if "auth" not in st.session_state:
 
 # --- 3. CSS DE PROTECTION (FORCE LA VISIBILITÉ DE LA SIDEBAR) ---
 st.markdown("""
-        <style>
-        /* Masquer le menu Streamlit et le header sur la page de login */
-        #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
-
-        /* Style du conteneur de login */
-        .login-box {
-            background-color: #ffffff;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border: 1px solid #f0f2f6;
-            text-align: center;
-            margin-top: 5vh;
-        }
-        
-        /* Personnalisation du bouton */
-        .stButton>button {
-            background-color: #0026C7 !important;
-            color: white !important;
-            border-radius: 8px !important;
-            height: 3em !important;
-            transition: 0.3s !important;
-            font-weight: bold !important;
-        }
-        .stButton>button:hover {
-            background-color: #C70000 !important;
-            border-color: #C70000 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+    .stApp { background-color: #FFFFFF !important; }
+    /* Force l'affichage du bouton de la barre latérale en bleu */
+    .st-emotion-cache-6q9sum.ef3ps4o4 { 
+        visibility: visible !important; 
+        display: block !important; 
+        fill: #0026C7 !important; 
+    }
+    header { visibility: visible !important; }
+    [data-testid="stSidebar"] { background-color: #E2E8F0 !important; border-right: 2px solid #000000 !important; }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 4. ÉLÉMENTS FIXES DE LA SIDEBAR (LOGO TOUJOURS VISIBLE) ---
 st.sidebar.markdown(
