@@ -535,7 +535,7 @@ elif menu == "🎯 Assignation Responsables":
     st.info("Saisissez les noms des responsables pour chaque créneau réservé. Les cases vides correspondent aux créneaux libres.")
 
     # 1. Préparation des jours de la semaine
-    jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     creneaux_horaires = sorted(df['Horaire'].unique()) # Récupère tous les horaires (ex: 08h-10h, etc.)
 
     # 2. Création de la grille visuelle
