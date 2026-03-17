@@ -532,81 +532,85 @@ elif menu == "📊 Statistiques":
 
 elif menu == "🎯 Assignation Responsables":
     st.header(f"🎯 Attribution des Responsables - Semaine {semaine_sel}")
-    st.info("Utilisez les onglets pour naviguer entre les jours. Saisissez le nom du responsable sous l'équipe concernée.")
     
-    # 1. Configuration des axes (Locaux et Horaires)
+    # 1. Préparation des variables
     tous_les_locaux = sorted(df['Local'].unique())
     tous_les_horaires = sorted(df['Horaire'].unique())
-    
-    # 2. Création des onglets : LUNDI AU VENDREDI UNIQUEMENT
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-    onglets = st.tabs(jours_semaine)
-
-    # Dictionnaire de conversion pour le calcul des dates
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
+    
+    # 2. Création des onglets
+    onglets = st.tabs(jours_semaine)
 
     for i, jour in enumerate(jours_semaine):
         with onglets[i]:
-            st.subheader(f"Planning du {jour}")
+            # Calcul de la date cible
+            base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
+            date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
             
-            # Calcul de la date exacte pour ce jour de la semaine
-            try:
-                base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
-                date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
-            except:
-                st.error("Erreur de calcul de date. Vérifiez l'année et la semaine.")
-                continue
-
-            # --- En-tête du tableau ---
-            # On ajuste la largeur : 1.5 pour l'heure, 3 parts égales par simulateur
-            cols_header = st.columns([1.5] + [3] * len(tous_les_locaux))
-            cols_header[0].write("**🕒 Horaire**")
-            for j, local in enumerate(tous_les_locaux):
-                cols_header[j+1].write(f"**🖥️ {local}**")
-            
-            st.divider()
-
-            # --- Remplissage des créneaux ---
-            for heure in tous_les_horaires:
-                row_cols = st.columns([1.5] + [3] * len(tous_les_locaux))
+            # Utilisation d'un formulaire pour grouper l'envoi
+            with st.form(key=f"form_assign_{jour}"):
+                st.subheader(f"Planning du {jour} {date_cible.strftime('%d/%m')}")
                 
-                # Colonne Heure
-                row_cols[0].markdown(f"### `{heure}`")
-
+                cols_h = st.columns([1.5] + [3] * len(tous_les_locaux))
+                cols_h[0].write("**🕒 Horaire**")
                 for j, local in enumerate(tous_les_locaux):
-                    # Filtre pour trouver la réservation
-                    mask = (df['Date_DT'].dt.date == date_cible) & \
-                           (df['Horaire'] == heure) & \
-                           (df['Local'] == local) & \
-                           (df['Equipe'].notna()) & (df['Equipe'] != "Libre")
-                    
-                    resa = df[mask]
+                    cols_h[j+1].write(f"**🖥️ {local}**")
+                st.divider()
 
-                    with row_cols[j+1]:
-                        if not resa.empty:
-                            equipe = resa.iloc[0]['Equipe']
-                            # Sécurité : on vérifie si la colonne Responsable existe
-                            current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
-                            
-                            st.markdown(f"**👤 {equipe}**")
-                            
-                            # Champ de saisie
-                            new_val = st.text_input(
-                                "Responsable",
-                                value=current_resp,
-                                key=f"res_{date_cible}_{heure}_{local}",
-                                label_visibility="collapsed",
-                                placeholder="Nom..."
-                            )
-                            
-                            # Indicateur de modification (Syntaxe corrigée sur une seule ligne)
-                            if new_val != current_resp and new_val != "":
-                                st.caption("✨ Prêt à enregistrer")
-                        else:
-                            # Créneau libre
-                            st.write("") 
+                # Liste pour stocker les modifs avant l'envoi
+                updates_a_envoyer = []
+
+                for heure in tous_les_horaires:
+                    row_cols = st.columns([1.5] + [3] * len(tous_les_locaux))
+                    row_cols[0].markdown(f"**{heure}**")
+
+                    for j, local in enumerate(tous_les_locaux):
+                        mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
+                        resa = df[mask]
+
+                        with row_cols[j+1]:
+                            if not resa.empty and resa.iloc[0]['Equipe'] not in ["Libre", ""]:
+                                equipe = resa.iloc[0]['Equipe']
+                                current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
+                                
+                                st.caption(f"👥 {equipe}")
+                                # Champ de saisie
+                                resp_nom = st.text_input("Nom", value=current_resp, key=f"in_{date_cible}_{heure}_{local}", label_visibility="collapsed")
+                                
+                                # On ajoute à la liste si un nom est présent
+                                updates_a_envoyer.append({
+                                    "date": str(date_cible),
+                                    "horaire": heure,
+                                    "local": local,
+                                    "responsable": resp_nom
+                                })
+                            else:
+                                st.write("-")
+
+                # Bouton de validation
+                btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
                 
-                st.write("---") # Séparateur entre les tranches horaires
+                if btn_save:
+                    if updates_a_envoyer:
+                        with st.spinner("Mise à jour de Google Sheets..."):
+                            try:
+                                # LE PAYLOAD ENVOYÉ AU SCRIPT GOOGLE
+                                payload = {
+                                    "action": "update_batch_responsables", 
+                                    "data": updates_a_envoyer
+                                }
+                                # Envoi de la requête POST
+                                response = requests.post(URL_DU_SCRIPT, json=payload)
+                                
+                                if "Success" in response.text:
+                                    st.success(f"✅ Responsables du {jour} enregistrés avec succès !")
+                                    st.rerun() # Recharge pour voir les changements
+                                else:
+                                    st.error(f"Erreur Google : {response.text}")
+                            except Exception as e:
+                                st.error(f"Erreur de connexion : {e}")
+                    else
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
