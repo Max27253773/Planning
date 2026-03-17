@@ -15,67 +15,75 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- 2. SYSTÈME D'AUTHENTIFICATION ---
 def check_auth():
+    """Formulaire d'accueil avec Identifiant et Mot de passe"""
+    
+    # Initialisation de l'état
     if "authenticated" not in st.session_state:
         st.session_state["authenticated"] = False
 
-    # --- CSS DE FORCE ---
-    if not st.session_state["authenticated"]:
-        st.markdown("""
-            <style>
-            /* On ne cache plus le header, on le rend transparent au login */
-            header { background: rgba(0,0,0,0) !important; }
-            #MainMenu { visibility: hidden; }
-            footer { visibility: hidden; }
-            .stApp { background-color: white; }
-            
-            .login-box {
-                background-color: #ffffff;
-                padding: 2rem;
-                border-radius: 15px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                border: 1px solid #f0f2f6;
-                text-align: center;
-                margin-top: 5vh;
-            }
-            </style>
-        """, unsafe_allow_html=True)
-    else:
-        # ICI ON FORCE LA RÉAPPARITION AVEC DES COULEURS CONTRASTÉES
-        st.markdown("""
-            <style>
-            header { 
-                visibility: visible !important; 
-                background-color: #f0f2f6 !important; /* Couleur claire pour voir le bouton */
-            }
-            /* Force l'icône de la sidebar à être sombre pour être visible */
-            .st-emotion-cache-15ec60s { color: #0026C7 !important; } 
-            </style>
-        """, unsafe_allow_html=True)
+    # CSS : On épure le login sans casser la navigation
+    st.markdown("""
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        .login-box {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #f0f2f6;
+            text-align: center;
+            margin-top: 5vh;
+        }
+        .stButton>button {
+            background-color: #0026C7 !important;
+            color: white !important;
+            border-radius: 8px !important;
+            height: 3em !important;
+            font-weight: bold !important;
+        }
+        /* On s'assure que le bouton de la sidebar reste visible en bleu */
+        .st-emotion-cache-6q9sum.ef3ps4o4 { fill: #0026C7 !important; }
+        </style>
+    """, unsafe_allow_html=True)
 
     def validate():
-        if (st.session_state["user_input"].upper() == "UT" and 
-            st.session_state["pass_input"] == "Azerty123*"):
+        # --- CONFIGURATION DES COMPTES ---
+        creds = {
+            "UT": "Azerty123*",
+            "PISTOLERO": "FULLAUTO" # Ton futur compte spécial
+        }
+        u_input = st.session_state["user_input"].upper()
+        p_input = st.session_state["pass_input"]
+        
+        if u_input in creds and creds[u_input] == p_input:
             st.session_state["authenticated"] = True
+            st.session_state["role"] = u_input
         else:
+            st.session_state["authenticated"] = False
             st.error("❌ Identifiant ou mot de passe incorrect.")
 
     if not st.session_state["authenticated"]:
         _, col_mid, _ = st.columns([1, 2, 1])
         with col_mid:
-            st.markdown('<div class="login-box"><h1 style="color: #0026C7; font-family: Impact;">⌬ ACCÈS IO</h1></div>', unsafe_allow_html=True)
-            st.text_input("Identifiant", key="user_input")
-            st.text_input("Mot de passe", type="password", key="pass_input")
-            st.button("SE CONNECTER", on_click=validate, use_container_width=True)
+            st.markdown("""
+                <div class="login-box">
+                    <h1 style='color: #0026C7; font-family: Impact; letter-spacing: 2px;'>⌬ ACCÈS IO</h1>
+                    <p style='color: #666;'>Veuillez vous identifier</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            with st.container(border=True):
+                st.text_input("Identifiant", key="user_input")
+                st.text_input("Mot de passe", type="password", key="pass_input")
+                st.button("ENTRER", on_click=validate, use_container_width=True)
         return False
-    
     return True
 
-# --- LANCEMENT DE L'APPLICATION ---
+# --- 3. LANCEMENT DE L'APPLICATION SI AUTHENTIFIÉ ---
 if check_auth():
-    # Ton code principal commence ici (Sidebar, Planning, etc.)
-    st.sidebar.title("IO")
-    # ...
 
     # --- TITRE IO DANS LA SIDEBAR ---
     st.sidebar.markdown(
