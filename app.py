@@ -48,7 +48,7 @@ st.sidebar.markdown(
 
 # --- 5. LOGIQUE DE CONNEXION ---
 if not st.session_state["auth"]:
-    st.markdown("### ⌬ Accès IO")
+    st.markdown("################ ⌬ Accès IO")
     with st.form("login_form"):
         user_input = st.text_input("Identifiant")
         pw_input = st.text_input("Mot de passe", type="password")
