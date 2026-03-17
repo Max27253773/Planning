@@ -592,7 +592,7 @@ elif menu == "🎯 Assignation Responsables":
                         with st.spinner("Envoi..."):
                             try:
                                 payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
-                                response = requests.post(URL_DU_SCRIPT, json=payload)
+                                response = requests.post(SCRIPT_URL, json=payload)
                                 if "Success" in response.text:
                                     st.success("✅ Enregistré !")
                                     st.rerun()
