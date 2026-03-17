@@ -648,7 +648,7 @@ elif menu == "🔐 Administration":
                     "date":conf['date'].strftime("%d/%m/%Y"),
                     "equipe":conf['eq'].upper(),
                     "horaire":conf['hr'],
-                    "local":conf['sm']
+                    "local":conf['lc']
                 }))
                 del st.session_state['confirm_add_doublon'] # On nettoie la session
                 st.success("✅ Doublon ajouté !"), time.sleep(1), st.rerun()
