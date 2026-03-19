@@ -281,80 +281,12 @@ current_color = LOCAL_CONFIG.get(local_sel, "#000000")
 text_on_color = "#000000" if local_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
 # --- CSS COMPLET ---
-# --- CSS COMPLET ---
-# Remplace tout le bloc st.markdown(f"""...""", unsafe_allow_html=True) existant par celui-ci
 st.markdown(f"""
     <style>
-    /* 1. Base de l'application */
     .stApp {{ background-color: #FFFFFF !important; }}
+    [data-testid="stSidebar"] {{ background-color: #E2E8F0 !important; border-right: 2px solid #000000 !important; }}
     h1 {{ font-size: 1.8rem !important; font-weight: 900 !important; color: #000000 !important; }}
-
-    /* 2. Configuration de la Sidebar Rétractable (Hack CSS) */
-    [data-testid="stSidebar"] {{
-        background-color: #E2E8F0 !important;
-        border-right: 2px solid #000000 !important;
-        /* Largeur réduite par défaut pour ne montrer que les icônes */
-        width: 80px !important;
-        min-width: 80px !important;
-        /* Transition douce pour l'effet de déploiement */
-        transition: width 0.3s ease-in-out !important;
-        overflow-x: hidden !important; /* Cache le texte qui dépasse */
-    }}
-
-    /* Déploiement de la Sidebar au survol (PC) ou au toucher (Mobile) */
-    [data-testid="stSidebar"]:hover,
-    [data-testid="stSidebar"]:active {{
-        width: 250px !important; /* Largeur normale déployée */
-    }}
-
-    /* 3. Style du Menu (Boutons Radio) */
-    /* Masque le texte des options par défaut */
-    [data-testid="stSidebar"] .stRadio > label {{
-        display: none !important;
-    }}
-
-    /* Affiche uniquement la première lettre (l'icône/emoji) en grand */
-    [data-testid="stSidebar"] label[data-baseweb="radio"] > div:first-child::first-letter {{
-        font-size: 1.8rem !important;
-        color: #333 !important; /* Couleur sobre des icônes */
-        margin-left: 10px; /* Centre un peu l'icône dans la barre réduite */
-        transition: color 0.3s ease;
-    }}
-
-    /* Style de l'option sélectionnée */
-    [data-testid="stSidebar"] label[data-baseweb="radio"][data-aria-checked="true"] > div:first-child::first-letter {{
-        color: #0026C7 !important; /* Couleur active (Bleu IO) */
-    }}
-
-    /* 4. Comportement au Déploiement (Survol/Toucher) */
-    /* Cache l'icône seule quand la barre est déployée pour ne pas faire doublon */
-    [data-testid="stSidebar"]:hover label[data-baseweb="radio"] > div:first-child::first-letter,
-    [data-testid="stSidebar"]:active label[data-baseweb="radio"] > div:first-child::first-letter {{
-        color: transparent !important;
-    }}
-
-    /* Réaffiche le texte complet de l'option quand la barre est déployée */
-    [data-testid="stSidebar"]:hover .stRadio > label,
-    [data-testid="stSidebar"]:active .stRadio > label {{
-        display: block !important;
-        margin-left: 10px;
-        font-weight: bold !important;
-        color: #333 !important;
-    }}
-
-    /* 5. Ajustements pour le Logo et le reste de la Sidebar */
-    /* Centre le logo IO dans la barre réduite */
-    [data-testid="stSidebar"] img, [data-testid="stSidebar"] .stMarkdown {{
-        text-align: center;
-        margin: auto;
-    }}
-
-    /* Masque le titre "MENU" quand la barre est réduite, l'affiche après */
-    [data-testid="stSidebar"] .stRadio > div:first-child {{
-        overflow: hidden;
-    }}
-
-    /* --- Reste de ton CSS existant pour le planning --- */
+    
     /* Mode Jour : Cadre ajusté pour finir à 20h00 */
     .planning-frame {{
         position: relative; width: 100%; background: #FFFFFF;
