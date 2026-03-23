@@ -607,7 +607,7 @@ elif menu == "🎯 Assignation Responsables":
                             st.error(f"Erreur de connexion : {e}")
 
 elif menu == "📋 Gestion Personnel":
-    st.header("📋 Enregistrement Personnel (Col F-I)")
+    st.header("📋 Indisponibilités ")
     
     with st.form("form_gestion_perso"):
         col1, col2 = st.columns(2)
