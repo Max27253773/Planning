@@ -566,17 +566,10 @@ elif menu == "📊 Statistiques":
     else:
         st.warning("Aucune donnée.")
 
-elif menu == "🎯 Assignation Responsables":
+if menu == "🎯 Assignation Responsables":
     st.header(f"🎯 Responsables - Semaine {semaine_sel}")
-
-    # --- CHARGEMENT SÉCURISÉ DES ABSENCES ---
-    try:
-        df_absences = charger_absences()
-    except Exception as e:
-        st.error(f"Erreur de chargement des absences : {e}")
-        df_absences = pd.DataFrame(columns=["date", "animateur", "type", "horaire"])
+    df_absences = charger_absences()
     
-    # Configuration
     tous_les_locaux = sorted(df['Local'].unique())
     tous_les_horaires = sorted(df['Horaire'].unique())
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
@@ -589,121 +582,72 @@ elif menu == "🎯 Assignation Responsables":
             base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
             date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
             
-            with st.form(key=f"form_mobile_{jour}"):
-                st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
+            with st.form(key=f"form_resp_{jour}"):
                 updates_a_envoyer = []
                 assignations_temp = {}
 
                 for heure in tous_les_horaires:
-                    # On calcule les dispos pour CETTE HEURE précise
                     liste_dispo_heure = filtrer_disponibles_precision(date_cible, heure, df_absences)
                     
-                    # On n'affiche l'heure que s'il y a des réservations
-                    mask_heure = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure)
-                    if not df[mask_heure].empty:
+                    mask_h = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure)
+                    if not df[mask_h].empty:
                         st.markdown(f"#### 🕒 {heure}")
-                    
+
                     for local in tous_les_locaux:
                         mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
                         resa = df[mask]
 
-                        # --- CORRECTION ICI : resa.iloc au lieu de resa.iloc ---
                         if not resa.empty and resa.iloc['Equipe'] not in ["Libre", "", None]:
                             equipe = resa.iloc['Equipe']
                             current_resp = resa.iloc['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc['Responsable']) else "-- Choisir --"
                             
-                            with st.container():
-                                st.markdown(f"**{local}** — 👥 *{equipe}*")
-                                
-                                options_menu = ["-- Choisir --"] + liste_dispo_heure
-                                if current_resp != "-- Choisir --" and current_resp not in options_menu:
-                                    options_menu.append(current_resp)
-                                
-                                try:
-                                    idx_init = options_menu.index(current_resp)
-                                except:
-                                    idx_init = 0
+                            st.markdown(f"**{local}** — 👥 *{equipe}*")
+                            options_menu = ["-- Choisir --"] + liste_dispo_heure
+                            if current_resp != "-- Choisir --" and current_resp not in options_menu:
+                                options_menu.append(current_resp)
+                            
+                            idx_init = options_menu.index(current_resp) if current_resp in options_menu else 0
 
-                                resp_nom = st.selectbox(
-                                    f"Responsable pour {local} {heure}",
-                                    options_menu,
-                                    index=idx_init,
-                                    key=f"mob_{date_cible}_{heure}_{local}",
-                                    label_visibility="collapsed"
-                                )
+                            resp_nom = st.selectbox(
+                                f"Qui pour {local} {heure}?", options_menu, index=idx_init,
+                                key=f"sel_{date_cible}_{heure}_{local}", label_visibility="collapsed"
+                            )
 
-                                if resp_nom != "-- Choisir --":
-                                    if f"{resp_nom}_{heure}" in assignations_temp:
-                                        autre_local = assignations_temp[f"{resp_nom}_{heure}"]
-                                        st.error(f"⚠️ {resp_nom} est déjà sur {autre_local} à {heure}")
-                                    else:
-                                        assignations_temp[f"{resp_nom}_{heure}"] = local
+                            if resp_nom != "-- Choisir --":
+                                if f"{resp_nom}_{heure}" in assignations_temp:
+                                    st.error(f"⚠️ {resp_nom} est déjà pris ailleurs à {heure}")
+                                else:
+                                    assignations_temp[f"{resp_nom}_{heure}"] = local
 
-                                updates_a_envoyer.append({
-                                    "date": str(date_cible),
-                                    "horaire": heure,
-                                    "local": local,
-                                    "responsable": "" if resp_nom == "-- Choisir --" else resp_nom
-                                })
-                    st.markdown("---")
+                            updates_a_envoyer.append({
+                                "date": str(date_cible), "horaire": heure, "local": local,
+                                "responsable": "" if resp_nom == "-- Choisir --" else resp_nom
+                            })
 
-                btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
-                
-                if btn_save:
-                    if updates_a_envoyer:
-                        with st.spinner("Envoi des données..."):
-                            try:
-                                payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
-                                response = requests.post(SCRIPT_URL, json=payload)
-                                if "Success" in response.text:
-                                    st.success("✅ Planning mis à jour !")
-                                    st.rerun()
-                            except Exception as e:
-                                st.error(f"Erreur réseau : {e}")
+                if st.form_submit_button(f"💾 ENREGISTRER {jour.upper()}", use_container_width=True):
+                    response = requests.post(SCRIPT_URL, json={"action": "update_batch_responsables", "data": updates_a_envoyer})
+                    if "Success" in response.text:
+                        st.success("Planning enregistré !")
+                        st.rerun()
 
 elif menu == "👥 Gestion Personnel":
-    st.markdown("<h1 style='text-align: center;'>👥 Gestion du Personnel</h1>", unsafe_allow_html=True)
-
-    st.subheader("➕ Déclarer une indisponibilité")
-    with st.form("form_gestion_pers"):
-        col1, col2 = st.columns(2)
-        with col1:
-            nom_select = st.selectbox("Personnel concerné", ["MAX", "ALEKS", "ALEX", "MAEL", "ELIES", "LISE", "SIMON", "JOSS", "E1"])
-            date_select = st.date_input("Date de l'indisponibilité", min_value=datetime.now().date())
-        with col2:
-            motif_select = st.selectbox("Motif", ["Sport", "Médecin", "Absence", "Formation", "Repos", "Autre"])
-            horaire_select = st.text_input("Créneau précis", placeholder="Ex: 08:00-12:00 ou Journée")
+    st.header("👥 Gestion du Personnel")
+    
+    with st.form("add_abs"):
+        c1, c2 = st.columns(2)
+        nom = c1.selectbox("Nom", ANIMATEURS_LISTE)
+        dt = c1.date_input("Date")
+        motif = c2.selectbox("Motif", ["Sport", "Repos", "Absence"])
+        hr = c2.text_input("Horaire", placeholder="08:00-12:00")
         
-        submit_abs = st.form_submit_button("💾 ENREGISTRER L'INDISPONIBILITÉ", use_container_width=True)
-        
-        if submit_abs:
-            data_abs = {
-                "action": "add_absence",
-                "date": str(date_select),
-                "animateur": nom_select,
-                "type": motif_select,
-                "horaire": horaire_select
-            }
-            try:
-                response = requests.post(SCRIPT_URL, json=data_abs)
-                if "Success" in response.text:
-                    st.success(f"✅ Enregistré !")
-                    st.rerun()
-            except Exception as e:
-                st.error(f"Erreur : {e}")
+        if st.form_submit_button("Enregistrer Absence"):
+            payload = {"action": "add_absence", "date": str(dt), "animateur": nom, "type": motif, "horaire": hr}
+            requests.post(SCRIPT_URL, json=payload)
+            st.rerun()
 
     st.divider()
-    st.subheader("📋 Récapitulatif")
-    
-    # Affichage sécurisé du tableau
-    try:
-        df_abs_visu = charger_absences()
-        if not df_abs_visu.empty:
-            st.dataframe(df_abs_visu, use_container_width=True, hide_index=True)
-        else:
-            st.info("Aucune indisponibilité enregistrée.")
-    except:
-        st.warning("Impossible de charger la liste des absences pour le moment.")
+    st.subheader("Absences Actuelles")
+    st.dataframe(charger_absences(), use_container_width=True, hide_index=True)
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
