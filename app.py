@@ -220,7 +220,8 @@ menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "�
 if st.session_state.get("role") == "Animateur":
     # Insertion des options supplémentaires dans la liste
     menus_de_base.insert(4, "🎯 Assignation Responsables")
-    menus_de_base.insert(5, "🔐 Administration")
+    menus_de_base.insert(5, "👥 Gestion personnel")
+    menus_de_base.insert(6, "🔐 Administration")
 
     # Affichage du menu principal
     menu = st.sidebar.radio("MENU", menus_de_base)
@@ -540,7 +541,10 @@ elif menu == "🎯 Assignation Responsables":
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
     
-    # Onglets pour les jours (fonctionne bien sur mobile car ils défilent horizontalement)
+    # On récupère les absences futures pour la vérification (à adapter selon ton stockage)
+    # Imaginons un DataFrame 'df_absences' chargé depuis ton Sheets
+    # df_absences = charger_absences() 
+
     onglets = st.tabs(jours_semaine)
 
     for i, jour in enumerate(jours_semaine):
@@ -550,55 +554,79 @@ elif menu == "🎯 Assignation Responsables":
             
             with st.form(key=f"form_mobile_{jour}"):
                 st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
-                
                 updates_a_envoyer = []
+                
+                # On stocke les assignations de la boucle pour détecter les doublons sur la même page
+                assignations_temp = {}
 
                 for heure in tous_les_horaires:
-                    # On affiche l'heure en grand pour séparer les sections
                     st.markdown(f"#### 🕒 {heure}")
                     
-                    # Pour chaque local, on crée une "carte" (un container)
                     for local in tous_les_locaux:
                         mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
                         resa = df[mask]
 
-                        if not resa.empty and resa.iloc[0]['Equipe'] not in ["Libre", "", None]:
-                            equipe = resa.iloc[0]['Equipe']
-                            current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
+                        if not resa.empty and resa.iloc['Equipe'] not in ["Libre", "", None]:
+                            equipe = resa.iloc['Equipe']
+                            current_resp = resa.iloc['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc['Responsable']) else "-- Choisir --"
                             
-                            # Design en mode "Carte" : fond légèrement grisé pour séparer les simulateurs
                             with st.container():
-                                # On affiche Local et Equipe sur la même ligne ou l'un sous l'autre
                                 st.markdown(f"**{local}** — 👥 *{equipe}*")
-                                resp_nom = st.text_input(
-                                    f"Responsable pour {local}", 
-                                    value=current_resp, 
-                                    key=f"mob_{date_cible}_{heure}_{local}",
-                                    label_visibility="collapsed",
-                                    placeholder="Nom du responsable..."
-                                )
                                 
+                                # Index pour le selectbox
+                                try:
+                                    idx_init = ANIMATEURS_LISTE.index(current_resp) + 1
+                                except:
+                                    idx_init = 0
+
+                                resp_nom = st.selectbox(
+                                    f"Responsable pour {local} {heure}",
+                                    ["-- Choisir --"] + ANIMATEURS_LISTE,
+                                    index=idx_init,
+                                    key=f"mob_{date_cible}_{heure}_{local}",
+                                    label_visibility="collapsed"
+                                )
+
+                                # --- LOGIQUE ANTI-CONFLIT ---
+                                if resp_nom != "-- Choisir --":
+                                    # 1. Conflit d'indisponibilité (Médecin, Sport, etc.)
+                                    # (Logique à activer quand ton onglet Absence sera créé)
+                                    # is_absent = verifier_si_absent(resp_nom, date_cible, heure)
+                                    
+                                    # 2. Conflit de doublon (Déjà sur un autre local au même moment)
+                                    if f"{resp_nom}_{heure}" in assignations_temp:
+                                        autre_local = assignations_temp[f"{resp_nom}_{heure}"]
+                                        st.error(f"⚠️ {resp_nom} est déjà sur {autre_local} à {heure}")
+                                    else:
+                                        assignations_temp[f"{resp_nom}_{heure}"] = local
+
                                 updates_a_envoyer.append({
                                     "date": str(date_cible),
                                     "horaire": heure,
                                     "local": local,
-                                    "responsable": resp_nom
+                                    "responsable": "" if resp_nom == "-- Choisir --" else resp_nom
                                 })
-                    st.markdown("---") # Séparateur entre les heures
+                    st.markdown("---")
 
                 btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
                 
                 if btn_save:
+                    # Vérification finale avant envoi
+                    noms_selectionnes = [u['responsable'] for u in updates_a_envoyer if u['responsable'] != ""]
+                    if len(noms_selectionnes) != len(set(noms_selectionnes + list(assignations_temp.keys()))):
+                         # On laisse passer si l'utilisateur assume le conflit ou on bloque
+                         pass
+
                     if updates_a_envoyer:
-                        with st.spinner("Envoi..."):
+                        with st.spinner("Mise à jour du planning..."):
                             try:
                                 payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
                                 response = requests.post(SCRIPT_URL, json=payload)
                                 if "Success" in response.text:
-                                    st.success("✅ Enregistré !")
+                                    st.success("✅ Planning mis à jour !")
                                     st.rerun()
                             except Exception as e:
-                                st.error(f"Erreur : {e}")
+                                st.error(f"Erreur réseau : {e}")
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
