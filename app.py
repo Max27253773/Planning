@@ -156,6 +156,35 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 20) for m in ["00", "30"]] + [
 
 st.set_page_config(page_title="Planning", layout="wide")
 
+# --- FILTRAGE ---
+def filtrer_disponibles_precision(date_cible, heure_creneau, df_absences):
+    date_str = str(date_cible)
+    disponibles = ["MAX", "ALEKS", "ALEX", "MAEL", "ELIES", "LISE", "SIMON", "JOSS", "E1"]
+    
+    if df_absences.empty:
+        return disponibles
+
+    # On ne garde que les absences du jour concerné
+    absences_du_jour = df_absences[df_absences['date'] == date_str]
+    absents_pendant_ce_creneau = []
+
+    for _, row in absences_du_jour.iterrows():
+        horaire_abs = str(row['horaire']).lower().strip()
+        
+        # Si c'est toute la journée ou si l'heure du créneau est dans la plage d'absence
+        if "jour" in horaire_abs:
+            absents_pendant_ce_creneau.append(row['animateur'])
+        elif "-" in horaire_abs:
+            try:
+                h_debut, h_fin = horaire_abs.split("-")
+                # Comparaison simple : "10:00" est-il entre "08:00" et "12:00" ?
+                if h_debut.strip() <= heure_creneau < h_fin.strip():
+                    absents_pendant_ce_creneau.append(row['animateur'])
+            except:
+                continue # En cas de mauvais format, on ignore l'erreur
+                
+    return [nom for nom in disponibles if nom not in absents_pendant_ce_creneau]
+
 # --- LOGIQUE DONNÉES ---
 def extraire_heures(horaire_str):
     try:
@@ -541,9 +570,12 @@ elif menu == "🎯 Assignation Responsables":
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
     
-    # On récupère les absences futures pour la vérification (à adapter selon ton stockage)
-    # Imaginons un DataFrame 'df_absences' chargé depuis ton Sheets
-    # df_absences = charger_absences() 
+    # --- ETAPE B (PRÉPARATION) : On récupère les absences ---
+    # Ici, on appelle ta fonction qui lit l'onglet "ABSENCES" du Google Sheets
+    try:
+        df_absences = charger_absences() # Assure-toi que cette fonction est définie en haut de ton code
+    except:
+        df_absences = pd.DataFrame(columns=["date", "animateur", "type", "horaire"])
 
     onglets = st.tabs(jours_semaine)
 
@@ -556,16 +588,20 @@ elif menu == "🎯 Assignation Responsables":
                 st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
                 updates_a_envoyer = []
                 
-                # On stocke les assignations de la boucle pour détecter les doublons sur la même page
+                # Stockage pour détecter si un animateur est mis sur 2 locaux en même temps
                 assignations_temp = {}
 
                 for heure in tous_les_horaires:
                     st.markdown(f"#### 🕒 {heure}")
                     
+                    # --- ETAPE B (FILTRAGE) : On calcule qui est disponible à CETTE HEURE précise ---
+                    liste_dispo_heure = filtrer_disponibles_precision(date_cible, heure, df_absences)
+                    
                     for local in tous_les_locaux:
                         mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
                         resa = df[mask]
 
+                        # Correction du .iloc pour éviter l'erreur
                         if not resa.empty and resa.iloc['Equipe'] not in ["Libre", "", None]:
                             equipe = resa.iloc['Equipe']
                             current_resp = resa.iloc['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc['Responsable']) else "-- Choisir --"
@@ -573,27 +609,27 @@ elif menu == "🎯 Assignation Responsables":
                             with st.container():
                                 st.markdown(f"**{local}** — 👥 *{equipe}*")
                                 
-                                # Index pour le selectbox
+                                # On définit les options du menu : l'animateur actuel doit être dedans même s'il est absent
+                                # pour éviter que le menu plante s'il a déjà été assigné.
+                                options_menu = ["-- Choisir --"] + liste_dispo_heure
+                                if current_resp != "-- Choisir --" and current_resp not in options_menu:
+                                    options_menu.append(current_resp)
+                                
                                 try:
-                                    idx_init = ANIMATEURS_LISTE.index(current_resp) + 1
+                                    idx_init = options_menu.index(current_resp)
                                 except:
                                     idx_init = 0
 
                                 resp_nom = st.selectbox(
                                     f"Responsable pour {local} {heure}",
-                                    ["-- Choisir --"] + ANIMATEURS_LISTE,
+                                    options_menu,
                                     index=idx_init,
                                     key=f"mob_{date_cible}_{heure}_{local}",
                                     label_visibility="collapsed"
                                 )
 
-                                # --- LOGIQUE ANTI-CONFLIT ---
+                                # --- LOGIQUE ANTI-CONFLIT (Doublon de local) ---
                                 if resp_nom != "-- Choisir --":
-                                    # 1. Conflit d'indisponibilité (Médecin, Sport, etc.)
-                                    # (Logique à activer quand ton onglet Absence sera créé)
-                                    # is_absent = verifier_si_absent(resp_nom, date_cible, heure)
-                                    
-                                    # 2. Conflit de doublon (Déjà sur un autre local au même moment)
                                     if f"{resp_nom}_{heure}" in assignations_temp:
                                         autre_local = assignations_temp[f"{resp_nom}_{heure}"]
                                         st.error(f"⚠️ {resp_nom} est déjà sur {autre_local} à {heure}")
@@ -611,12 +647,6 @@ elif menu == "🎯 Assignation Responsables":
                 btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
                 
                 if btn_save:
-                    # Vérification finale avant envoi
-                    noms_selectionnes = [u['responsable'] for u in updates_a_envoyer if u['responsable'] != ""]
-                    if len(noms_selectionnes) != len(set(noms_selectionnes + list(assignations_temp.keys()))):
-                         # On laisse passer si l'utilisateur assume le conflit ou on bloque
-                         pass
-
                     if updates_a_envoyer:
                         with st.spinner("Mise à jour du planning..."):
                             try:
