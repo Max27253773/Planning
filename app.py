@@ -697,7 +697,7 @@ elif menu == "🔐 Administration":
 
         with tab2:
             if not df_filtre_admin.empty:
-                idx_mod = st.selectbox("Sélectionner le créneau", df_filtre_admin.index, format_func=lambda i: f"{df.loc[i,'Date']} | {df.loc[i,'Equipe']} ({df.loc[i,'Horaire']})")
+                idx_mod = st.selectbox("Sélectionner le créneau", df_filtre_admin.index, format_func=lambda i: f"{df.loc[i,'Date']} | {df.loc[i,'Equipe']} ({df.loc[i,'Horaire']}) {df.loc[i,'Local']}")
                 with st.form("modifier_form"):
                     ed = st.date_input("Date", value=df.loc[idx_mod,'Date_DT'])
                     ee = st.text_input("Equipe", df.loc[idx_mod,'Equipe'])
