@@ -534,72 +534,94 @@ elif menu == "📊 Statistiques":
 
 elif menu == "🎯 Assignation Responsables":
     st.header(f"🎯 Responsables - Semaine {semaine_sel}")
-    
-    # Configuration
-    tous_les_locaux = sorted(df['Local'].unique())
-    tous_les_horaires = sorted(df['Horaire'].unique())
+
+    # 1. Ta liste de référence (Animateurs)
+    # On ajoute "-- Choisir --" pour les cases vides
+    ANIMATEURS_LISTE = ["-- Choisir --", "MAX", "ALEX", "SOPHIE", "LUCAS", "JULIE"]
+
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
     
-    # Onglets pour les jours (fonctionne bien sur mobile car ils défilent horizontalement)
+    # Création des onglets pour chaque jour de la semaine
     onglets = st.tabs(jours_semaine)
 
     for i, jour in enumerate(jours_semaine):
         with onglets[i]:
+            # Calcul de la date précise pour le filtrage
             base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
             date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
             
-            with st.form(key=f"form_mobile_{jour}"):
-                st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
-                
-                updates_a_envoyer = []
+            # Filtrage du dataframe pour n'afficher que le jour sélectionné
+            planning_jour = df[df['Date_DT'].dt.date == date_cible]
 
-                for heure in tous_les_horaires:
-                    # On affiche l'heure en grand pour séparer les sections
-                    st.markdown(f"#### 🕒 {heure}")
+            if planning_jour.empty:
+                st.info(f"Aucune activité prévue pour le {jour} {date_cible.strftime('%d/%m')}")
+            else:
+                with st.form(key=f"form_assign_{jour}"):
+                    st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
                     
-                    # Pour chaque local, on crée une "carte" (un container)
-                    for local in tous_les_locaux:
-                        mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
-                        resa = df[mask]
+                    updates_a_envoyer = []
+                    
+                    # On trie par horaire pour plus de clarté
+                    horaires_tries = sorted(planning_jour['Horaire'].unique())
 
-                        if not resa.empty and resa.iloc[0]['Equipe'] not in ["Libre", "", None]:
-                            equipe = resa.iloc[0]['Equipe']
-                            current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
+                    for heure in horaires_tries:
+                        st.markdown(f"#### 🕒 Créneau de {heure}")
+                        
+                        # Activités pour cet horaire précis
+                        activites_h = planning_jour[planning_jour['Horaire'] == heure]
+                        
+                        for _, row in activites_h.iterrows():
+                            local = row['Local']
+                            equipe = row['Equipe']
+                            # Responsable actuel (Col E du Sheets)
+                            current_resp = row['Responsable'] if pd.notna(row['Responsable']) and row['Responsable'] != "" else "-- Choisir --"
                             
-                            # Design en mode "Carte" : fond légèrement grisé pour séparer les simulateurs
-                            with st.container():
-                                # On affiche Local et Equipe sur la même ligne ou l'un sous l'autre
-                                st.markdown(f"**{local}** — 👥 *{equipe}*")
-                                resp_nom = st.text_input(
-                                    f"Responsable pour {local}", 
-                                    value=current_resp, 
-                                    key=f"mob_{date_cible}_{heure}_{local}",
-                                    label_visibility="collapsed",
-                                    placeholder="Nom du responsable..."
-                                )
-                                
-                                updates_a_envoyer.append({
-                                    "date": str(date_cible),
-                                    "horaire": heure,
-                                    "local": local,
-                                    "responsable": resp_nom
-                                })
-                    st.markdown("---") # Séparateur entre les heures
-
-                btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
-                
-                if btn_save:
-                    if updates_a_envoyer:
-                        with st.spinner("Envoi..."):
+                            # Mise en page de la "carte" d'activité
+                            st.write(f"🏠 **Local :** {local} | 👥 **Équipe :** {equipe}")
+                            
+                            # Recherche de l'index par défaut dans la liste
                             try:
-                                payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
-                                response = requests.post(SCRIPT_URL, json=payload)
-                                if "Success" in response.text:
-                                    st.success("✅ Enregistré !")
+                                default_idx = ANIMATEURS_LISTE.index(current_resp)
+                            except ValueError:
+                                default_idx = 0 # Retour à "-- Choisir --" si le nom n'est pas dans la liste
+
+                            choix = st.selectbox(
+                                f"Responsable ({local} - {heure})",
+                                ANIMATEURS_LISTE,
+                                index=default_idx,
+                                key=f"sel_{date_cible}_{heure}_{local}",
+                                label_visibility="collapsed"
+                            )
+
+                            # On prépare la donnée pour l'envoi groupé
+                            updates_a_envoyer.append({
+                                "date": str(date_cible),
+                                "horaire": str(heure),
+                                "local": str(local),
+                                "responsable": choix if choix != "-- Choisir --" else ""
+                            })
+                        
+                        st.divider()
+
+                    # Bouton de sauvegarde par jour
+                    submit = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
+
+                    if submit:
+                        if updates_a_envoyer:
+                            payload = {
+                                "action": "update_batch_responsables",
+                                "data": updates_a_envoyer
+                            }
+                            try:
+                                res = requests.post(SCRIPT_URL, json=payload)
+                                if "Success" in res.text:
+                                    st.success(f"✅ Mise à jour réussie pour le {jour} !")
                                     st.rerun()
+                                else:
+                                    st.error(f"Erreur Sheets : {res.text}")
                             except Exception as e:
-                                st.error(f"Erreur : {e}")
+                                st.error(f"Erreur de connexion : {e}")
 
 elif menu == "📋 Gestion Personnel":
     st.header("📋 Enregistrement des Indisponibilités")
