@@ -533,13 +533,16 @@ elif menu == "📊 Statistiques":
 elif menu == "🎯 Assignation Responsables":
     st.header(f"🎯 Responsables - Semaine {semaine_sel}")
     
+    # --- LISTE DES ANIMATEURS (Modifie les noms ici) ---
+    ANIMATEURS = ["-- Choisir --", "MAX", "ALEX", "SOPHIE", "LUCAS", "JULIE"]
+    
     # Configuration
     tous_les_locaux = sorted(df['Local'].unique())
     tous_les_horaires = sorted(df['Horaire'].unique())
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
     
-    # Onglets pour les jours (fonctionne bien sur mobile car ils défilent horizontalement)
+    # Onglets pour les jours
     onglets = st.tabs(jours_semaine)
 
     for i, jour in enumerate(jours_semaine):
@@ -553,52 +556,59 @@ elif menu == "🎯 Assignation Responsables":
                 updates_a_envoyer = []
 
                 for heure in tous_les_horaires:
-                    # On affiche l'heure en grand pour séparer les sections
+                    # Affichage de l'heure
                     st.markdown(f"#### 🕒 {heure}")
                     
-                    # Pour chaque local, on crée une "carte" (un container)
                     for local in tous_les_locaux:
                         mask = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure) & (df['Local'] == local)
                         resa = df[mask]
 
-                        if not resa.empty and resa.iloc[0]['Equipe'] not in ["Libre", "", None]:
-                            equipe = resa.iloc[0]['Equipe']
-                            current_resp = resa.iloc[0]['Responsable'] if 'Responsable' in resa.columns and pd.notna(resa.iloc[0]['Responsable']) else ""
+                        if not resa.empty and resa.iloc['Equipe'] not in ["Libre", "", None]:
+                            equipe = resa.iloc['Equipe']
+                            # Récupération du responsable actuel pour l'index par défaut
+                            current_resp = str(resa.iloc['Responsable']) if 'Responsable' in resa.columns and pd.notna(resa.iloc['Responsable']) else "-- Choisir --"
                             
-                            # Design en mode "Carte" : fond légèrement grisé pour séparer les simulateurs
+                            # Gestion de l'index par défaut dans la liste
+                            if current_resp in ANIMATEURS:
+                                default_idx = ANIMATEURS.index(current_resp)
+                            else:
+                                default_idx = 0
+
                             with st.container():
-                                # On affiche Local et Equipe sur la même ligne ou l'un sous l'autre
                                 st.markdown(f"**{local}** — 👥 *{equipe}*")
-                                resp_nom = st.text_input(
+                                
+                                # --- LA SELECTBOX REMPLACE LE TEXT_INPUT ---
+                                resp_choisi = st.selectbox(
                                     f"Responsable pour {local}", 
-                                    value=current_resp, 
+                                    ANIMATEURS,
+                                    index=default_idx,
                                     key=f"mob_{date_cible}_{heure}_{local}",
-                                    label_visibility="collapsed",
-                                    placeholder="Nom du responsable..."
+                                    label_visibility="collapsed"
                                 )
                                 
                                 updates_a_envoyer.append({
                                     "date": str(date_cible),
-                                    "horaire": heure,
-                                    "local": local,
-                                    "responsable": resp_nom
+                                    "horaire": str(heure),
+                                    "local": str(local),
+                                    "responsable": resp_choisi if resp_choisi != "-- Choisir --" else ""
                                 })
-                    st.markdown("---") # Séparateur entre les heures
+                    st.markdown("---")
 
                 btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
                 
                 if btn_save:
                     if updates_a_envoyer:
-                        with st.spinner("Envoi..."):
+                        with st.spinner("Envoi au Google Sheets..."):
                             try:
                                 payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
                                 response = requests.post(SCRIPT_URL, json=payload)
                                 if "Success" in response.text:
-                                    st.success("✅ Enregistré !")
+                                    st.success("✅ Enregistré dans le Sheets !")
                                     st.rerun()
+                                else:
+                                    st.error(f"Erreur Sheets : {response.text}")
                             except Exception as e:
-                                st.error(f"Erreur : {e}")
-
+                                st.error(f"Erreur de connexion : {e}")
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
     
