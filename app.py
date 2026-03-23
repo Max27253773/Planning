@@ -608,42 +608,44 @@ elif menu == "🎯 Assignation Responsables":
 elif menu == "📋 Gestion Personnel":
     st.header("📋 Gestion du Personnel (Col F-I)")
 
-    # --- BOUTON DE RECHARGEMENT ---
+    # Bouton pour forcer la mise à jour si le Sheets a changé
     if st.button("🔄 Actualiser les données"):
         st.cache_data.clear()
         st.rerun()
 
-    # --- 1. FORCE LA LECTURE DES COLONNES F-I ---
-    # On vérifie le nombre de COLONNES (index 1 de shape)
+    # --- 1. SÉCURITÉ : FORCE LE NOMBRE DE COLONNES (Correction de l'erreur) ---
+    # On s'assure que le DataFrame a au moins 9 colonnes (A à I)
+    # df.shape correspond au nombre de COLONNES
     while df.shape < 9:
         df[f"Col_Sup_{df.shape}"] = ""
 
     # --- 2. FILTRAGE DES DONNÉES EXISTANTES ---
-    # On crée une copie pour ne pas polluer le planning principal
+    # On crée une copie et on nettoie la colonne F (index 5)
     df_perso = df.copy()
-    
-    # On nettoie la colonne F (index 5) pour détecter les vraies données
+    # On transforme les valeurs vides ou 'nan' en vrai vide pour le filtrage
     df_perso.iloc[:, 5] = df_perso.iloc[:, 5].astype(str).replace(['nan', 'None', '', ' '], pd.NA)
-    df_perso_clean = df_perso.dropna(subset=[df_perso.columns])
+    # On ne garde que les lignes où la colonne F est remplie
+    df_clean = df_perso.dropna(subset=[df_perso.columns])
 
-    # --- SECTION VISUALISATION & MODIFICATION ---
+    # --- SECTION VISUALISATION ---
     st.subheader("🔍 Indisponibilités Enregistrées")
     
-    if df_perso_clean.empty:
-        st.info("ℹ️ Aucune donnée détectée en colonne F. Utilisez le formulaire ci-dessous pour ajouter une entrée.")
+    if df_clean.empty:
+        st.info("ℹ️ Aucune donnée détectée en colonne F. Ajoutez-en une via le formulaire ci-dessous.")
     else:
-        for idx, row in df_perso_clean.iterrows():
-            # Index : F=5, G=6, H=7, I=8
+        for idx, row in df_clean.iterrows():
+            # Extraction : F=5, G=6, H=7, I=8
             f_date = row.iloc
             g_anim = row.iloc
             h_type = row.iloc
             i_hour = row.iloc
 
+            # Affichage visuel sympa
             with st.expander(f"👤 {g_anim} — 📅 {f_date} ({h_type})"):
                 with st.form(key=f"edit_perso_{idx}"):
                     c1, c2 = st.columns(2)
                     
-                    # Gestion sécurisée de la date pour l'affichage
+                    # Gestion de la date sécurisée
                     try:
                         d_val = pd.to_datetime(f_date).date()
                     except:
@@ -659,7 +661,7 @@ elif menu == "📋 Gestion Personnel":
                     if b1.form_submit_button("💾 SAUVEGARDER", use_container_width=True):
                         payload = {
                             "action": "update_personnel",
-                            "row": int(idx) + 2, # +2 pour l'entête du Google Sheet
+                            "row": int(idx) + 2,
                             "date": str(m_date),
                             "animateur": m_anim,
                             "type": m_type,
@@ -684,7 +686,7 @@ elif menu == "📋 Gestion Personnel":
     with st.form("form_ajout_f_i"):
         col1, col2 = st.columns(2)
         new_date = col1.date_input("Date (Col F)")
-        new_anim = col1.text_input("Nom Animateur (Col G)")
+        new_anim = col1.text_input("Animateur (Col G)")
         new_type = col2.selectbox("Motif (Col H)", ["Réunion", "Absence", "Formation", "Congé"])
         new_hour = col2.text_input("Heure (Col I)", placeholder="ex: 14h-17h")
         
