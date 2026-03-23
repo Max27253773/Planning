@@ -220,6 +220,7 @@ menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "�
 if st.session_state.get("role") == "Animateur":
     # Insertion des options supplémentaires dans la liste
     menus_de_base.insert(4, "🎯 Assignation Responsables")
+    menus_de_base.insert(4, "📋 Gestion Personnel")
     menus_de_base.insert(5, "🔐 Administration")
 
     # Affichage du menu principal
@@ -604,7 +605,39 @@ elif menu == "🎯 Assignation Responsables":
                                 st.error(f"Erreur : {response.text}")
                         except Exception as e:
                             st.error(f"Erreur de connexion : {e}")
-                            
+
+elif menu == "📋 Gestion Personnel":
+    st.header("📋 Enregistrement Personnel (Col F-I)")
+    
+    with st.form("form_gestion_perso"):
+        col1, col2 = st.columns(2)
+        with col1:
+            date_p = st.date_input("Date (Col F)")
+            # Remplace la liste par tes vrais noms d'animateurs
+            anim_p = st.selectbox("Animateur (Col G)", ["MAX", "ALEX", "SOPHIE", "LUCAS", "JULIE"])
+        with col2:
+            type_p = st.selectbox("Type (Col H)", ["Réunion", "Absence", "Formation", "Congé"])
+            heure_p = st.text_input("Horaire (Col I)", placeholder="ex: 08h-10h")
+            
+        btn_perso = st.form_submit_button("ENREGISTRER")
+        
+        if btn_perso:
+            payload = {
+                "action": "add_personnel",
+                "date": str(date_p),
+                "animateur": anim_p,
+                "type": type_p,
+                "horaire": heure_p
+            }
+            try:
+                response = requests.post(SCRIPT_URL, json=payload)
+                if "Success" in response.text:
+                    st.success(f"✅ Enregistré pour {anim_p} en colonnes F-I")
+                else:
+                    st.error(f"Erreur : {response.text}")
+            except Exception as e:
+                st.error(f"Erreur de connexion : {e}")
+
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
     
