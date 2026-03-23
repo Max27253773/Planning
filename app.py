@@ -613,28 +613,27 @@ elif menu == "📋 Gestion Personnel":
         st.cache_data.clear()
         st.rerun()
 
-    # 2. AFFICHAGE DES INDISPOS (LECTURE LIGNE PAR LIGNE)
+    # 2. AFFICHAGE DES INDISPOS
     st.subheader("🔍 Indisponibilités Enregistrées")
     found_data = False
 
-    # On parcourt le tableau 'df' ligne par ligne
+    # On parcourt chaque ligne du DataFrame
     for idx, row in df.iterrows():
-        # Sécurité : on vérifie si la ligne possède au moins 6 colonnes (jusqu'à F)
+        # On vérifie si la ligne a assez de colonnes (au moins 6 pour atteindre F)
         if len(row) > 5:
-            # ON EXTRAIT LES VALEURS (Bien mettre les CROCHETS [ ] après iloc)
-            val_f = str(row.iloc).strip() # Colonne F (Date)
+            # --- CORRECTION CRUCIALE ICI : Bien utiliser les crochets [index] ---
+            val_f = str(row.iloc).strip() # Colonne F
             
-            # Si la colonne F n'est pas vide et n'est pas "nan"
+            # On ignore les lignes vides
             if val_f != "" and val_f.lower() != "nan":
                 found_data = True
                 
-                # Récupération des colonnes G, H, I avec sécurité sur la longueur
-                val_g = str(row.iloc) if len(row) > 6 else ""
-                val_h = str(row.iloc) if len(row) > 7 else ""
-                val_i = str(row.iloc) if len(row) > 8 else ""
+                # Extraction sécurisée des autres colonnes avec les CROCHETS []
+                val_g = str(row.iloc) if len(row) > 6 else "" # Colonne G
+                val_h = str(row.iloc) if len(row) > 7 else "" # Colonne H
+                val_i = str(row.iloc) if len(row) > 8 else "" # Colonne I
 
-                # Affichage dans une carte dépliable (Expander)
-                # On nettoie l'affichage pour ne plus voir <pandas.core...>
+                # Affichage dans l'expander (Le titre utilisera les vraies valeurs maintenant)
                 with st.expander(f"👤 {val_g} — 📅 {val_f} ({val_h})"):
                     with st.form(key=f"form_edit_perso_{idx}"):
                         c1, c2 = st.columns(2)
@@ -645,11 +644,11 @@ elif menu == "📋 Gestion Personnel":
                         
                         btn_save, btn_del = st.columns(2)
                         
-                        # LOGIQUE DE MODIFICATION
-                        if btn_save.form_submit_button("💾 SAUVEGARDER"):
+                        # --- SAUVEGARDE ---
+                        if btn_save.form_submit_button("💾 SAUVEGARDER", use_container_width=True):
                             payload = {
                                 "action": "update_personnel",
-                                "row": int(idx) + 2, # +2 pour l'index Sheets
+                                "row": int(idx) + 2,
                                 "date": m_date, 
                                 "animateur": m_anim, 
                                 "type": m_type, 
@@ -660,8 +659,8 @@ elif menu == "📋 Gestion Personnel":
                             st.success("Modifié !")
                             st.rerun()
                         
-                        # LOGIQUE DE SUPPRESSION
-                        if btn_del.form_submit_button("🗑️ SUPPRIMER", type="primary"):
+                        # --- SUPPRESSION ---
+                        if btn_del.form_submit_button("🗑️ SUPPRIMER", type="primary", use_container_width=True):
                             payload = {
                                 "action": "delete_personnel", 
                                 "row": int(idx) + 2
@@ -676,7 +675,7 @@ elif menu == "📋 Gestion Personnel":
 
     st.divider()
 
-    # 3. FORMULAIRE D'AJOUT (Comme avant)
+    # 3. FORMULAIRE D'AJOUT
     st.subheader("➕ Ajouter une indisponibilité")
     with st.form("form_add_new_perso"):
         col1, col2 = st.columns(2)
@@ -696,7 +695,7 @@ elif menu == "📋 Gestion Personnel":
             res = requests.post(SCRIPT_URL, json=payload)
             if "Success" in res.text:
                 st.cache_data.clear()
-                st.success("Enregistré avec succès !")
+                st.success("Enregistré !")
                 st.rerun()
                 
 elif menu == "🔐 Administration":
