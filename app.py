@@ -606,7 +606,7 @@ elif menu == "🎯 Assignation Responsables":
                             st.error(f"Erreur de connexion : {e}")
 
 elif menu == "📋 Gestion Personnel":
-    st.header("📋 Gestion du Personnel (Col F-I)")
+    st.header("📋 Gestion du Personnel")
     
     # 1. LISTE DES ANIMATEURS (A ajuster selon tes besoins)
     LISTE_ANIM = ["MAX", "ALEX", "SOPHIE", "LUCAS", "JULIE"]
@@ -616,10 +616,10 @@ elif menu == "📋 Gestion Personnel":
     with st.expander("➕ Enregistrer une nouvelle indisponibilité", expanded=False):
         with st.form("form_ajout_perso"):
             c1, c2 = st.columns(2)
-            d_p = c1.date_input("Date (Col F)")
-            a_p = c1.selectbox("Animateur (Col G)", LISTE_ANIM)
-            t_p = c2.selectbox("Type (Col H)", TYPES_INDISPO)
-            h_p = c2.text_input("Horaire (Col I)", placeholder="ex: 08:00 - 12:00")
+            d_p = c1.date_input("Date")
+            a_p = c1.selectbox("Animateur", LISTE_ANIM)
+            t_p = c2.selectbox("Type", TYPES_INDISPO)
+            h_p = c2.text_input("Horaire", placeholder="ex: 08h00 - 12h00")
             
             if st.form_submit_button("VALIDER L'ENREGISTREMENT", use_container_width=True):
                 payload = {
