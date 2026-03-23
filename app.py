@@ -613,35 +613,36 @@ elif menu == "📋 Gestion Personnel":
         st.cache_data.clear()
         st.rerun()
 
-    # --- 1. FORCE LA LECTURE DES COLONNES F-I ---
-    # Si ton DF n'a pas assez de colonnes, on en rajoute des vides pour éviter les plantages
+    # --- 1. FORCE LA LECTURE DES COLONNES F-I (Correction ici) ---
+    # On s'assure que le DataFrame a au moins 9 colonnes (A à I)
     while df.shape < 9:
-        df[f"Temp_Col_{df.shape}"] = ""
+        df[f"Col_Sup_{df.shape}"] = ""
 
     # --- 2. FILTRAGE DES DONNÉES EXISTANTES ---
-    # On cherche les lignes où la colonne F (index 5) n'est PAS vide
-    # On nettoie les données pour enlever les "nan" (vides)
+    # On identifie les lignes où la colonne F (index 5) contient une info
     df_perso = df.copy()
-    df_perso.iloc[:, 5] = df_perso.iloc[:, 5].astype(str).replace(['nan', 'None', ''], pd.NA)
+    # On convertit en texte et on nettoie les valeurs vides/nulles
+    df_perso.iloc[:, 5] = df_perso.iloc[:, 5].astype(str).replace(['nan', 'None', '', ' '], pd.NA)
     df_perso = df_perso.dropna(subset=[df_perso.columns])
 
     # --- SECTION VISUALISATION & MODIFICATION ---
     st.subheader("🔍 Indisponibilités Enregistrées")
     
     if df_perso.empty:
-        st.warning("⚠️ Aucune donnée détectée en colonne F. Vérifiez que les infos sont bien présentes dans le Sheets à partir de la 6ème colonne.")
+        st.info("ℹ️ Aucune donnée détectée en colonne F. Utilisez le formulaire ci-dessous pour ajouter une entrée.")
     else:
         for idx, row in df_perso.iterrows():
-            # Récupération par index pour être certain de l'emplacement (F=5, G=6, H=7, I=8)
+            # F=5, G=6, H=7, I=8
             f_date = row.iloc
             g_anim = row.iloc
             h_type = row.iloc
             i_hour = row.iloc
 
-            with st.expander(f"👤 {g_anim} — 📅 {f_date}"):
+            with st.expander(f"👤 {g_anim} — 📅 {f_date} ({h_type})"):
                 with st.form(key=f"edit_perso_{idx}"):
                     c1, c2 = st.columns(2)
-                    # On tente de convertir la date pour le sélecteur, sinon date du jour
+                    
+                    # Gestion sécurisée de la date pour l'affichage
                     try:
                         d_val = pd.to_datetime(f_date).date()
                     except:
@@ -656,20 +657,22 @@ elif menu == "📋 Gestion Personnel":
                     if b1.form_submit_button("💾 SAUVEGARDER", use_container_width=True):
                         payload = {
                             "action": "update_personnel",
-                            "row": int(idx) + 2,
+                            "row": int(idx) + 2, # +2 pour l'entête Sheets
                             "date": str(m_date),
                             "animateur": m_anim,
                             "type": m_type,
                             "horaire": m_hour
                         }
-                        requests.post(SCRIPT_URL, json=payload)
+                        res = requests.post(SCRIPT_URL, json=payload)
                         st.cache_data.clear()
+                        st.success("Modifié !")
                         st.rerun()
                     
                     if b2.form_submit_button("🗑️ SUPPRIMER", type="primary", use_container_width=True):
                         payload = {"action": "delete_personnel", "row": int(idx) + 2}
-                        requests.post(SCRIPT_URL, json=payload)
+                        res = requests.post(SCRIPT_URL, json=payload)
                         st.cache_data.clear()
+                        st.warning("Supprimé !")
                         st.rerun()
 
     st.divider()
@@ -696,7 +699,6 @@ elif menu == "📋 Gestion Personnel":
                 st.cache_data.clear()
                 st.success("Enregistré !")
                 st.rerun()
-
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
     
