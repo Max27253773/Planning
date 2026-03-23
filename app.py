@@ -628,6 +628,63 @@ elif menu == "🎯 Assignation Responsables":
                             except Exception as e:
                                 st.error(f"Erreur réseau : {e}")
 
+elif menu == "👥 Gestion Personnel":
+    st.markdown("<h1 style='text-align: center;'>👥 Gestion du Personnel</h1>", unsafe_allow_html=True)
+
+    # --- FORMULAIRE D'AJOUT ---
+    with st.expander("➕ Déclarer une indisponibilité (Médecin, Sport, Congés...)", expanded=False):
+        with st.form("form_gestion_pers"):
+            col1, col2 = st.columns(2)
+            with col1:
+                nom_select = st.selectbox("Personnel concerné", ANIMATEURS_LISTE)
+                date_select = st.date_input("Date de l'indispo", min_value=datetime.now().date())
+            with col2:
+                motif_select = st.selectbox("Motif", ["Sport", "Médecin", "Absence", "Formation", "Autre"])
+                # On peut mettre un champ texte pour l'horaire précis
+                horaire_select = st.text_input("Créneau (ex: 10:00-12:00)", placeholder="Toute la journée")
+            
+            submit_abs = st.form_submit_button("💾 ENREGISTRER L'INDISPONIBILITÉ", use_container_width=True)
+            
+            if submit_abs:
+                data_abs = {
+                    "date": str(date_select),
+                    "animateur": nom_select,
+                    "type": motif_select,
+                    "horaire": horaire_select
+                }
+                with st.spinner("Envoi au Google Sheets..."):
+                    try:
+                        payload = {"action": "add_absence", "data": data_abs}
+                        response = requests.post(SCRIPT_URL, json=payload)
+                        if "Success" in response.text:
+                            st.success(f"✅ Indisponibilité de {nom_select} enregistrée.")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Erreur de connexion : {e}")
+
+    st.divider()
+
+    # --- AFFICHAGE DES INDISPOS FUTURES ---
+    st.subheader("🗓️ Indisponibilités à venir")
+    
+    # Ici, on filtre pour ne montrer que les dates >= aujourd'hui
+    # On suppose que tu as une fonction 'charger_absences()' qui lit l'onglet 'ABSENCES'
+    try:
+        # Code temporaire pour tester le visuel avant d'avoir la lecture Sheets :
+        absences_futures = [
+            {"Date": "2024-03-27", "Animateur": "MAX", "Type": "Médecin", "Horaire": "10:00-12:00"},
+            {"Date": "2024-03-28", "Animateur": "LISE", "Type": "Sport", "Horaire": "12:00-14:00"}
+        ]
+        
+        if not absences_futures:
+            st.info("Aucune indisponibilité prévue pour le moment.")
+        else:
+            for a in absences_futures:
+                # Design sobre avec une alerte Warning
+                st.warning(f"**{a['Animateur']}** — {a['Type']} ({a['Horaire']}) le **{a['Date']}**")
+    except:
+        st.error("Impossible de charger la liste des indisponibilités.")
+
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
     
