@@ -637,60 +637,54 @@ elif menu == "🎯 Assignation Responsables":
                                 st.error(f"Erreur : {e}")
 
 elif menu == "📋 Gestion Personnel":
-    st.header("📋 Enregistrement des Indisponibilités")
+    st.header("📋 Gestion du Personnel")
     
-    # Ta liste de référence (doit être la même que dans l'onglet Assignation)
     ANIMATEURS_LISTE = ["MAX", "ALEX", "SOPHIE", "LUCAS", "JULIE"]
 
-    with st.form("form_indispo"):
-        col1, col2 = st.columns(2)
+    with st.form("form_gestion_perso"):
+        c1, c2 = st.columns(2)
+        with c1:
+            d_p = st.date_input("Date")
+            n_p = st.selectbox("Animateur", ANIMATEURS_LISTE)
+        with c2:
+            t_p = st.selectbox("Type", ["Réunion", "Absence", "Formation", "Congé"])
+            h_p = st.text_input("Horaire (ex: 10:00)", placeholder="HH:MM")
         
-        with col1:
-            date_indispo = st.date_input("Date de l'événement")
-            nom_anim = st.selectbox("Animateur concerné", ANIMATEURS_LISTE)
+        submit = st.form_submit_button("Enregistrer", use_container_width=True)
         
-        with col2:
-            type_indispo = st.selectbox("Type d'indisponibilité", 
-                                      ["Réunion", "Absence", "Formation", "Congé", "Autre"])
-            # L'horaire doit correspondre exactement au format du planning (ex: 10:00)
-            horaire_indispo = st.text_input("Horaire précis (ex: 10:00)", placeholder="HH:MM")
-
-        submit_indispo = st.form_submit_button("Enregistrer l'indisponibilité", use_container_width=True)
-
-        if submit_indispo:
-            if not horaire_indispo:
-                st.error("Veuillez préciser l'horaire.")
+        if submit:
+            if not h_p:
+                st.warning("Précisez l'horaire !")
             else:
                 payload = {
                     "action": "add_personnel",
-                    "date": str(date_indispo),
-                    "animateur": nom_anim,
-                    "type": type_indispo,
-                    "horaire": horaire_indispo
+                    "date": d_p.isoformat(), # Format YYYY-MM-DD
+                    "animateur": n_p,
+                    "type": t_p,
+                    "horaire": h_p
                 }
                 
                 try:
                     res = requests.post(SCRIPT_URL, json=payload)
                     if "Success" in res.text:
-                        st.success(f"✅ {nom_anim} est marqué en {type_indispo} à {horaire_indispo}")
+                        st.success(f"Enregistré : {n_p} en {t_p}")
                         st.rerun()
                     else:
-                        st.error("Erreur lors de l'envoi au Sheets.")
+                        st.error(f"Réponse Google : {res.text}")
                 except Exception as e:
                     st.error(f"Erreur de connexion : {e}")
 
-    # --- OPTIONNEL : Afficher le récapitulatif des indispos du jour ---
+    # Visualisation du tableau (Colonnes F à I)
     st.divider()
-    st.subheader("🔎 Indisponibilités enregistrées")
-    
-    # On filtre le DataFrame sur les colonnes F à I (index 5 à 8)
+    st.subheader("Historique Personnel")
     try:
-        # On ne garde que les lignes où la colonne F (index 5) n'est pas vide
-        df_perso = df[df.iloc[:, 5].notna()].iloc[:,]
-        df_perso.columns = ["Date", "Animateur", "Motif", "Horaire"]
-        st.dataframe(df_perso, use_container_width=True, hide_index=True)
+        # On affiche les colonnes F, G, H, I (index 5, 6, 7, 8)
+        # On donne des noms avec Majuscules pour l'affichage
+        df_display = df[df.iloc[:, 5].notna()].iloc[:,]
+        df_display.columns = ["Date", "Animateur", "Type", "Horaire"]
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
     except:
-        st.info("Aucune indisponibilité enregistrée pour le moment.")
+        st.info("Aucune donnée personnel trouvée.")
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
