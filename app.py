@@ -608,51 +608,55 @@ elif menu == "🎯 Assignation Responsables":
 elif menu == "📋 Gestion Personnel":
     st.header("📋 Gestion du Personnel (Col F-I)")
 
-    # Bouton de secours pour forcer la lecture du Sheets
-    if st.button("🔄 Rafraîchir les données"):
+    # 1. BOUTON DE RECHARGEMENT TOTAL (Indispensable pour voir les modifs)
+    if st.button("🔄 Actualiser la liste depuis Google Sheets"):
         st.cache_data.clear()
         st.rerun()
 
-    # --- SÉCURITÉ : LECTURE ROBUSTE ---
-    # On crée une copie du planning pour travailler sur les colonnes F, G, H, I
-    # Si les colonnes n'existent pas encore dans ton DF, on les crée vide
-    for i in range(5, 9): # Index 5, 6, 7, 8 (Colonnes F, G, H, I)
-        if i >= len(df.columns):
-            df[f"Col_{i}"] = ""
+    # 2. SÉCURITÉ DE LECTURE : On vérifie que le DF contient assez de colonnes
+    # On force la création des colonnes F, G, H, I (index 5 à 8) si elles manquent
+    required_cols = 9
+    current_cols = len(df.columns)
+    if current_cols < required_cols:
+        for i in range(current_cols, required_cols):
+            df[f"Extra_{i}"] = None
 
-    # On filtre : on ne garde que les lignes où la COLONNE F (index 5) n'est pas vide
-    # On convertit en texte pour éviter les erreurs avec les dates/nombres
-    df_perso = df.copy()
-    mask = df_perso.iloc[:, 5].astype(str).str.strip().replace(['nan', 'None', ''], pd.NA).notna()
-    df_clean = df_perso[mask]
+    # 3. FILTRAGE : On cherche les lignes où la COLONNE F (index 5) est remplie
+    # On crée une copie pour travailler proprement
+    df_visu = df.copy()
+    
+    # On convertit la colonne F en texte et on traite les valeurs vides (NaN)
+    df_visu.iloc[:, 5] = df_visu.iloc[:, 5].astype(str).replace(['nan', 'None', '', ' '], pd.NA)
+    
+    # On ne garde que les lignes où la colonne 5 (F) n'est pas vide
+    df_clean = df_visu.dropna(subset=[df_visu.columns])
 
-    # --- AFFICHAGE DES INDISPOS ---
+    # --- SECTION VISUALISATION ---
     st.subheader("🔍 Indisponibilités Enregistrées")
     
     if df_clean.empty:
-        st.info("Aucune donnée détectée dans les colonnes F à I du Google Sheet.")
+        st.warning("⚠️ Aucune indisponibilité détectée dans le fichier. Vérifiez que vos données commencent bien à la 6ème colonne (F) dans le Sheets.")
     else:
         for idx, row in df_clean.iterrows():
-            # Extraction directe par position
+            # Extraction par index : F=5, G=6, H=7, I=8
             f_date = row.iloc
             g_anim = row.iloc
             h_type = row.iloc
             i_hour = row.iloc
 
-            with st.expander(f"👤 {g_anim} — 📅 {f_date}"):
-                with st.form(key=f"edit_f_i_{idx}"):
+            with st.expander(f"👤 {g_anim} — 📅 {f_date} ({h_type})"):
+                with st.form(key=f"edit_perso_{idx}"):
                     c1, c2 = st.columns(2)
                     m_date = c1.text_input("Date (F)", value=str(f_date))
                     m_anim = c1.text_input("Animateur (G)", value=str(g_anim))
-                    m_type = c2.selectbox("Type (H)", ["Réunion", "Absence", "Formation", "Congé"], 
-                                         index=0) # Tu peux ajuster l'index si besoin
+                    m_type = c2.selectbox("Type (H)", ["Réunion", "Absence", "Formation", "Congé"], index=0)
                     m_hour = c2.text_input("Horaire (I)", value=str(i_hour))
                     
                     b1, b2 = st.columns(2)
                     if b1.form_submit_button("💾 SAUVEGARDER"):
                         payload = {
                             "action": "update_personnel",
-                            "row": int(idx) + 2,
+                            "row": int(idx) + 2, # +2 pour l'entête du Sheets
                             "date": m_date, "animateur": m_anim, "type": m_type, "horaire": m_hour
                         }
                         requests.post(SCRIPT_URL, json=payload)
@@ -667,14 +671,14 @@ elif menu == "📋 Gestion Personnel":
 
     st.divider()
 
-    # --- FORMULAIRE D'AJOUT ---
+    # --- SECTION AJOUT ---
     st.subheader("➕ Ajouter une indisponibilité")
     with st.form("form_add_perso"):
         col1, col2 = st.columns(2)
         new_date = col1.date_input("Date")
         new_anim = col1.text_input("Animateur")
         new_type = col2.selectbox("Motif", ["Réunion", "Absence", "Formation", "Congé"])
-        new_hour = col2.text_input("Heure", placeholder="ex: 08h-12h")
+        new_hour = col2.text_input("Heure", placeholder="ex: 08:00 - 12:00")
         
         if st.form_submit_button("ENREGISTRER"):
             payload = {
@@ -687,7 +691,7 @@ elif menu == "📋 Gestion Personnel":
             res = requests.post(SCRIPT_URL, json=payload)
             if "Success" in res.text:
                 st.cache_data.clear()
-                st.success("C'est envoyé !")
+                st.success("Données envoyées !")
                 st.rerun()
                 
 elif menu == "🔐 Administration":
