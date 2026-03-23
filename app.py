@@ -608,62 +608,62 @@ elif menu == "🎯 Assignation Responsables":
 elif menu == "📋 Gestion Personnel":
     st.header("📋 Gestion du Personnel (Col F-I)")
 
-    # 1. BOUTON DE RECHARGEMENT TOTAL (Indispensable pour voir les modifs)
-    if st.button("🔄 Actualiser la liste depuis Google Sheets"):
+    if st.button("🔄 Actualiser la liste"):
         st.cache_data.clear()
         st.rerun()
 
-    # 2. SÉCURITÉ DE LECTURE : On vérifie que le DF contient assez de colonnes
-    # On force la création des colonnes F, G, H, I (index 5 à 8) si elles manquent
-    required_cols = 9
-    current_cols = len(df.columns)
-    if current_cols < required_cols:
-        for i in range(current_cols, required_cols):
-            df[f"Extra_{i}"] = None
-
-    # 3. FILTRAGE : On cherche les lignes où la COLONNE F (index 5) est remplie
-    # On crée une copie pour travailler proprement
+    # --- ÉTAPE 1 : SÉCURISATION DU TABLEAU ---
+    # On s'assure que le DataFrame a au moins 9 colonnes pour éviter les crashs
     df_visu = df.copy()
-    
-    # On convertit la colonne F en texte et on traite les valeurs vides (NaN)
-    df_visu.iloc[:, 5] = df_visu.iloc[:, 5].astype(str).replace(['nan', 'None', '', ' '], pd.NA)
-    
-    # On ne garde que les lignes où la colonne 5 (F) n'est pas vide
-    df_clean = df_visu.dropna(subset=[df_visu.columns])
+    nb_cols_actuelles = df_visu.shape
+    if nb_cols_actuelles < 9:
+        for i in range(nb_cols_actuelles, 9):
+            df_visu[f"Colonne_{i}"] = None
 
-    # --- SECTION VISUALISATION ---
+    # --- ÉTAPE 2 : FILTRAGE ROBUSTE ---
+    # On regarde la 6ème colonne (index 5 -> Colonne F)
+    # On convertit en texte et on vérifie si c'est vide ou 'nan'
+    def est_rempli(val):
+        v = str(val).strip().lower()
+        return v not in ['nan', 'none', '', 'nat']
+
+    # On crée une liste des index des lignes qui ont une info en Col F
+    indices_valides = [idx for idx, row in df_visu.iterrows() if est_rempli(row.iloc)]
+    df_clean = df_visu.loc[indices_valides]
+
+    # --- ÉTAPE 3 : AFFICHAGE ---
     st.subheader("🔍 Indisponibilités Enregistrées")
     
     if df_clean.empty:
-        st.warning("⚠️ Aucune indisponibilité détectée dans le fichier. Vérifiez que vos données commencent bien à la 6ème colonne (F) dans le Sheets.")
+        st.info("ℹ️ Aucune indisponibilité trouvée dans les colonnes F-I.")
     else:
         for idx, row in df_clean.iterrows():
-            # Extraction par index : F=5, G=6, H=7, I=8
+            # Accès sécurisé par position : F=5, G=6, H=7, I=8
             f_date = row.iloc
             g_anim = row.iloc
             h_type = row.iloc
             i_hour = row.iloc
 
-            with st.expander(f"👤 {g_anim} — 📅 {f_date} ({h_type})"):
-                with st.form(key=f"edit_perso_{idx}"):
+            with st.expander(f"👤 {g_anim} — 📅 {f_date}"):
+                with st.form(key=f"edit_f_i_{idx}"):
                     c1, c2 = st.columns(2)
                     m_date = c1.text_input("Date (F)", value=str(f_date))
                     m_anim = c1.text_input("Animateur (G)", value=str(g_anim))
-                    m_type = c2.selectbox("Type (H)", ["Réunion", "Absence", "Formation", "Congé"], index=0)
+                    m_type = c2.text_input("Type (H)", value=str(h_type))
                     m_hour = c2.text_input("Horaire (I)", value=str(i_hour))
                     
-                    b1, b2 = st.columns(2)
-                    if b1.form_submit_button("💾 SAUVEGARDER"):
+                    col_b1, col_b2 = st.columns(2)
+                    if col_b1.form_submit_button("💾 SAUVEGARDER"):
                         payload = {
                             "action": "update_personnel",
-                            "row": int(idx) + 2, # +2 pour l'entête du Sheets
+                            "row": int(idx) + 2,
                             "date": m_date, "animateur": m_anim, "type": m_type, "horaire": m_hour
                         }
                         requests.post(SCRIPT_URL, json=payload)
                         st.cache_data.clear()
                         st.rerun()
                     
-                    if b2.form_submit_button("🗑️ SUPPRIMER", type="primary"):
+                    if col_b2.form_submit_button("🗑️ SUPPRIMER", type="primary"):
                         payload = {"action": "delete_personnel", "row": int(idx) + 2}
                         requests.post(SCRIPT_URL, json=payload)
                         st.cache_data.clear()
@@ -683,10 +683,7 @@ elif menu == "📋 Gestion Personnel":
         if st.form_submit_button("ENREGISTRER"):
             payload = {
                 "action": "add_personnel",
-                "date": str(new_date),
-                "animateur": new_anim,
-                "type": new_type,
-                "horaire": new_hour
+                "date": str(new_date), "animateur": new_anim, "type": new_type, "horaire": new_hour
             }
             res = requests.post(SCRIPT_URL, json=payload)
             if "Success" in res.text:
