@@ -608,65 +608,49 @@ elif menu == "🎯 Assignation Responsables":
 elif menu == "📋 Gestion Personnel":
     st.header("📋 Gestion du Personnel (Col F-I)")
 
-    # BOUTON POUR FORCER LA MISE À JOUR
-    if st.button("🔄 Actualiser les données du Sheets"):
+    # --- BOUTON DE RECHARGEMENT ---
+    if st.button("🔄 Actualiser les données"):
         st.cache_data.clear()
         st.rerun()
 
-    # --- CONFIGURATION ---
-    LISTE_ANIM = ["MAX", "ALEX", "SOPHIE", "LUCAS", "JULIE"]
-    TYPES_INDISPO = ["Réunion", "Absence", "Formation", "Congé", "Autre"]
+    # --- 1. FORCE LA LECTURE DES COLONNES F-I ---
+    # Si ton DF n'a pas assez de colonnes, on en rajoute des vides pour éviter les plantages
+    while df.shape < 9:
+        df[f"Temp_Col_{df.shape}"] = ""
 
-    # --- SECTION 1 : AJOUTER ---
-    with st.expander("➕ Enregistrer une nouvelle indisponibilité", expanded=False):
-        with st.form("form_ajout_perso"):
-            c1, c2 = st.columns(2)
-            d_p = c1.date_input("Date (Col F)")
-            a_p = c1.selectbox("Animateur (Col G)", LISTE_ANIM)
-            t_p = c2.selectbox("Type (Col H)", TYPES_INDISPO)
-            h_p = c2.text_input("Horaire (Col I)", placeholder="ex: 08:00 - 12:00")
-            
-            if st.form_submit_button("VALIDER L'ENREGISTREMENT", use_container_width=True):
-                payload = {
-                    "action": "add_personnel",
-                    "date": str(d_p),
-                    "animateur": a_p,
-                    "type": t_p,
-                    "horaire": h_p
-                }
-                res = requests.post(SCRIPT_URL, json=payload)
-                if "Success" in res.text:
-                    st.cache_data.clear() # TRÈS IMPORTANT : on vide le cache ici
-                    st.success(f"✅ Ajouté pour {a_p}")
-                    st.rerun()
+    # --- 2. FILTRAGE DES DONNÉES EXISTANTES ---
+    # On cherche les lignes où la colonne F (index 5) n'est PAS vide
+    # On nettoie les données pour enlever les "nan" (vides)
+    df_perso = df.copy()
+    df_perso.iloc[:, 5] = df_perso.iloc[:, 5].astype(str).replace(['nan', 'None', ''], pd.NA)
+    df_perso = df_perso.dropna(subset=[df_perso.columns])
 
-    st.divider()
-
-    # --- SECTION 2 : VISUALISATION (Lecture Col F-I) ---
-    st.subheader("🔍 Indisponibilités Actuelles")
+    # --- SECTION VISUALISATION & MODIFICATION ---
+    st.subheader("🔍 Indisponibilités Enregistrées")
     
-    # On filtre pour ne garder que les lignes où la colonne F (index 5) n'est pas vide
-    # On convertit en string pour éviter les erreurs de type
-    df_perso = df[df.iloc[:, 5].astype(str).str.strip() != "nan"].copy()
-    df_perso = df_perso[df_perso.iloc[:, 5].astype(str).str.strip() != ""]
-
     if df_perso.empty:
-        st.info("Aucune indisponibilité détectée. Si vous venez d'en ajouter une, cliquez sur 'Actualiser' en haut.")
+        st.warning("⚠️ Aucune donnée détectée en colonne F. Vérifiez que les infos sont bien présentes dans le Sheets à partir de la 6ème colonne.")
     else:
         for idx, row in df_perso.iterrows():
-            # Récupération sécurisée par index de colonne
-            val_date = row.iloc
-            val_anim = row.iloc
-            val_type = row.iloc
-            val_hour = row.iloc
+            # Récupération par index pour être certain de l'emplacement (F=5, G=6, H=7, I=8)
+            f_date = row.iloc
+            g_anim = row.iloc
+            h_type = row.iloc
+            i_hour = row.iloc
 
-            with st.expander(f"👤 {val_anim} — 📅 {val_date} ({val_type})"):
+            with st.expander(f"👤 {g_anim} — 📅 {f_date}"):
                 with st.form(key=f"edit_perso_{idx}"):
-                    cc1, cc2 = st.columns(2)
-                    m_date = cc1.date_input("Modifier Date", pd.to_datetime(val_date) if val_date else datetime.date.today())
-                    m_anim = cc1.selectbox("Animateur", LISTE_ANIM, index=LISTE_ANIM.index(val_anim) if val_anim in LISTE_ANIM else 0)
-                    m_type = cc2.selectbox("Type", TYPES_INDISPO, index=TYPES_INDISPO.index(val_type) if val_type in TYPES_INDISPO else 0)
-                    m_hour = cc2.text_input("Horaire", value=str(val_hour))
+                    c1, c2 = st.columns(2)
+                    # On tente de convertir la date pour le sélecteur, sinon date du jour
+                    try:
+                        d_val = pd.to_datetime(f_date).date()
+                    except:
+                        d_val = datetime.date.today()
+                        
+                    m_date = c1.date_input("Modifier Date", d_val)
+                    m_anim = c1.text_input("Modifier Animateur", value=str(g_anim))
+                    m_type = c2.selectbox("Modifier Type", ["Réunion", "Absence", "Formation", "Congé"], index=0)
+                    m_hour = c2.text_input("Modifier Horaire", value=str(i_hour))
                     
                     b1, b2 = st.columns(2)
                     if b1.form_submit_button("💾 SAUVEGARDER", use_container_width=True):
@@ -687,6 +671,31 @@ elif menu == "📋 Gestion Personnel":
                         requests.post(SCRIPT_URL, json=payload)
                         st.cache_data.clear()
                         st.rerun()
+
+    st.divider()
+
+    # --- SECTION AJOUT ---
+    st.subheader("➕ Ajouter une indisponibilité")
+    with st.form("form_ajout_f_i"):
+        col1, col2 = st.columns(2)
+        new_date = col1.date_input("Date (Col F)")
+        new_anim = col1.text_input("Nom Animateur (Col G)")
+        new_type = col2.selectbox("Motif (Col H)", ["Réunion", "Absence", "Formation", "Congé"])
+        new_hour = col2.text_input("Heure (Col I)", placeholder="ex: 14h-17h")
+        
+        if st.form_submit_button("ENREGISTRER DANS LE SHEETS", use_container_width=True):
+            payload = {
+                "action": "add_personnel",
+                "date": str(new_date),
+                "animateur": new_anim,
+                "type": new_type,
+                "horaire": new_hour
+            }
+            res = requests.post(SCRIPT_URL, json=payload)
+            if "Success" in res.text:
+                st.cache_data.clear()
+                st.success("Enregistré !")
+                st.rerun()
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
