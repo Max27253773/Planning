@@ -157,45 +157,38 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 20) for m in ["00", "30"]] + [
 
 st.set_page_config(page_title="Planning", layout="wide")
 
-# --- FILTRAGE ---
+# --- FONCTIONS TECHNIQUES ---
+
+def charger_absences():
+    try:
+        response = requests.post(SCRIPT_URL, json={"action": "get_absences"})
+        if response.status_code == 200:
+            return pd.DataFrame(response.json())
+    except:
+        pass
+    return pd.DataFrame(columns=["date", "animateur", "type", "horaire"])
+
 def filtrer_disponibles_precision(date_cible, heure_creneau, df_absences):
     date_str = str(date_cible)
-    disponibles = ["MAX", "ALEKS", "ALEX", "MAEL", "ELIES", "LISE", "SIMON", "JOSS", "E1"]
-    
     if df_absences.empty:
-        return disponibles
+        return ANIMATEURS_LISTE
 
-    # On ne garde que les absences du jour concerné
     absences_du_jour = df_absences[df_absences['date'] == date_str]
     absents_pendant_ce_creneau = []
 
     for _, row in absences_du_jour.iterrows():
         horaire_abs = str(row['horaire']).lower().strip()
-        
-        # Si c'est toute la journée ou si l'heure du créneau est dans la plage d'absence
         if "jour" in horaire_abs:
             absents_pendant_ce_creneau.append(row['animateur'])
         elif "-" in horaire_abs:
             try:
                 h_debut, h_fin = horaire_abs.split("-")
-                # Comparaison simple : "10:00" est-il entre "08:00" et "12:00" ?
                 if h_debut.strip() <= heure_creneau < h_fin.strip():
                     absents_pendant_ce_creneau.append(row['animateur'])
             except:
-                continue # En cas de mauvais format, on ignore l'erreur
+                continue
                 
-    return [nom for nom in disponibles if nom not in absents_pendant_ce_creneau]
-
-def charger_absences():
-    """Récupère les données de l'onglet ABSENCES du Google Sheets"""
-    try:
-        response = requests.post(SCRIPT_URL, json={"action": "get_absences"})
-        if response.status_code == 200:
-            return pd.DataFrame(response.json())
-        else:
-            return pd.DataFrame(columns=["date", "animateur", "type", "horaire"])
-    except:
-        return pd.DataFrame(columns=["date", "animateur", "type", "horaire"])
+    return [nom for nom in ANIMATEURS_LISTE if nom not in absents_pendant_ce_creneau]
 
 # --- LOGIQUE DONNÉES ---
 def extraire_heures(horaire_str):
