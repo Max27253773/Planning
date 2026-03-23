@@ -142,6 +142,7 @@ st.markdown("""
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1mmPHzEY9p7ohdzvIYvwQOvqmKNa_8VQdZyl4sj1nksw/export?format=csv&gid=0"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhetuY5QpJEvl-Wv1BMGej5FeW6S3-WDcbS1DwcwUVT-Yt3e8th1XG9pPCcbrwPu5ITw/exec"
 ADMIN_PASSWORD = "1234" 
+ANIMATEURS_LISTE = ["MAX", "ALEKS", "ALEX", "MAEL", "ELIES", "LISE", "SIMON", "JOSS"]
 
 LOCAL_CONFIG = {
     "JUP": "#1976D2", "MIN": "#C2185B", "JUN": "#757575",
