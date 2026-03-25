@@ -102,7 +102,6 @@ if "role" not in st.session_state:
 
 # --- 4. LOGIQUE VISUELLE DE CONNEXION ---
 if not st.session_state["auth"]:
-    # Style Néo-Brutaliste personnalisé
     st.markdown("""
         <style>
         /* Cacher la sidebar et le header pendant la connexion */
@@ -156,7 +155,7 @@ if not st.session_state["auth"]:
     with st.form("login_form"):
         st.markdown("<h2 style='text-align: center; color: black; margin-top: 0; font-family: sans-serif; font-weight: 900;'>CONNEXION</h2>", unsafe_allow_html=True)
         
-        user_input = st.text_input("IDENTIFIANT", placeholder="Ex: UT ou ANIM")
+        user_input = st.text_input("IDENTIFIANT")
         pw_input = st.text_input("MOT DE PASSE", type="password", placeholder="••••••••")
         
         submit_auth = st.form_submit_button("SE CONNECTER")
