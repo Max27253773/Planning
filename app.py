@@ -79,17 +79,20 @@ def extraire_heures(horaire_str):
 
 def verifier_conflit(df, date_test, horaire_test, local_test, equipe_test, exclude_id=None):
     h_deb_new, h_fin_new = extraire_heures(horaire_test)
-    if h_deb_new is None: return "block", "Format d'heure invalide (ex: 08:00 - 10:00)."
-    date_s = str(date_test)
-    # Vérification occupation du local
-    mask = (df['Date'] == date_s) & (df['Local'].str.upper() == local_test.upper())
-    if exclude_id: mask = mask & (df['id'] != exclude_id)
+    if h_deb_new is None: 
+        return "block", "Format d'heure invalide (ex: 08:00 - 10:00)."
+    date_test_dt = pd.to_datetime(date_test).date()
+    mask = (df['Date_DT'].dt.date == date_test_dt) & (df['Local'].str.upper() == local_test.upper())
+    
+    if exclude_id: 
+        mask = mask & (df['id'] != exclude_id)
+        
     for _, row in df[mask].iterrows():
-        h_ex_d, h_ex_f = extraire_heures(row['Horaire'])
+        h_ex_d, h_ex_f = extraire_heures(row['Horaire']) # Vérifie que 'Horaire' a bien un H majuscule
         if h_ex_d is not None and max(h_deb_new, h_ex_d) < min(h_fin_new, h_ex_f):
             return "block", f"Le local {local_test} est déjà occupé sur ce créneau."
+            
     return "ok", ""
-
 # --- 4. AUTHENTIFICATION ---
 if "auth" not in st.session_state: st.session_state["auth"] = False
 
