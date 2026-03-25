@@ -23,13 +23,13 @@ def load_data():
         response = supabase.table("Planning").select("*").execute()
         data = pd.DataFrame(response.data)
         if not data.empty:
-            data['Date_DT'] = pd.to_datetime(data['date'], errors='coerce')
+            data['date_DT'] = pd.to_datetime(data['date'], errors='coerce')
             data = data.rename(columns={
-                "equipe": "Equipe", "horaire": "Horaire", "local": "Local", 
-                "responsable": "Responsable", "date": "Date"
+                "equipe": "equipe", "horaire": "horaire", "local": "local", 
+                "responsable": "responsable", "date": "date"
             })
             return data
-        return pd.DataFrame(columns=["id", "Date", "Equipe", "Horaire", "Local", "Responsable", "Date_DT"])
+        return pd.DataFrame(columns=["id", "date", "equipe", "horaire", "local", "responsable", "date_DT"])
     except Exception as e:
         st.error(f"Erreur de chargement : {e}")
         return pd.DataFrame()
