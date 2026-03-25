@@ -188,7 +188,7 @@ if st.session_state["role"] == "Animateur": menus += ["🎯 Assignation Responsa
 
 menu = st.sidebar.radio("MENU", menus)
 st.sidebar.divider()
-annee_sel = st.sidebar.selectbox("Année",, index=1)
+annee_sel = st.sidebar.selectbox("Année",, index=1) 
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=datetime.now().isocalendar()-1)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
