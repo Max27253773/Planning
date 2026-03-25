@@ -447,76 +447,87 @@ elif menu == "📊 Statistiques":
 elif menu == "🎯 Assignation Responsables":
     st.header(f"🎯 Responsables - Semaine {semaine_sel}")
     
+    # 1. Liste des animateurs (A ajuster selon tes besoins)
     ANIMATEURS = ["-- Choisir --", "MAX", "ALEKS", "ALEX", "MAEL", "ELIES", "LISE", "SIMON", "JOSS"]
     
-    tous_les_locaux = sorted(df['Local'].unique())
-    tous_les_horaires = sorted(df['Horaire'].unique())
+    # 2. Préparation des données de la semaine
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     jours_trad = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4}
     
+    # On crée 5 onglets pour les jours de la semaine
     onglets = st.tabs(jours_semaine)
 
     for i, jour in enumerate(jours_semaine):
         with onglets[i]:
+            # Calcul de la date précise pour le jour de l'onglet
             base_semaine = pd.to_datetime(f"{annee_sel}-W{semaine_sel}-1", format="%G-W%V-%u")
             date_cible = (base_semaine + pd.Timedelta(days=jours_trad[jour])).date()
+            date_str_iso = date_cible.strftime("%Y-%m-%d") # Format pour le filtre Supabase
             
-            # INITIALISATION DU FORMULAIRE
-            with st.form(key=f"form_assign_{jour}"):
-                st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
-                updates_a_envoyer = []
+            # Affichage de la date
+            st.subheader(f"📅 {jour} {date_cible.strftime('%d/%m')}")
 
-                for heure in tous_les_horaires:
-                    # Filtrer les réservations pour ce jour et cette heure
-                    mask_jour_heure = (df['Date_DT'].dt.date == date_cible) & (df['Horaire'] == heure)
-                    activites_creneau = df[mask_jour_heure]
+            # Filtrer le DataFrame pour ce jour précis
+            mask_jour = (df['Date_DT'].dt.date == date_cible)
+            activites_du_jour = df[mask_jour].sort_values(by='Horaire')
 
-                    if not activites_creneau.empty:
-                        st.markdown(f"#### 🕒 {heure}")
+            if activites_du_jour.empty:
+                st.info("Aucun créneau prévu pour ce jour.")
+            else:
+                # INITIALISATION DU FORMULAIRE PAR JOUR
+                with st.form(key=f"form_assign_{jour}"):
+                    updates_a_envoyer = []
+
+                    # On boucle sur chaque réservation du jour
+                    for _, row in activites_du_jour.iterrows():
+                        equipe = row.get('Equipe', 'Inconnu')
+                        local = row.get('Local', 'Inconnu')
+                        horaire = row.get('Horaire', 'Inconnu')
+                        current_resp = str(row.get('Responsable', '')).strip()
+                        row_id = row.get('id')
+
+                        # Nettoyage du responsable actuel pour la selectbox
+                        if not current_resp or current_resp == "nan" or current_resp == "None":
+                            current_resp = "-- Choisir --"
+
+                        # Calcul de l'index par défaut
+                        def_idx = ANIMATEURS.index(current_resp) if current_resp in ANIMATEURS else 0
+
+                        # Affichage du créneau avec sa selectbox
+                        st.markdown(f"**🕒 {horaire}** | 🏠 **{local}** — 👥 *{equipe}*")
+                        resp_choisi = st.selectbox(
+                            f"Responsable pour {local} {horaire}",
+                            ANIMATEURS,
+                            index=def_idx,
+                            key=f"sel_{row_id}_{jour}", # Clé unique basée sur l'ID Supabase
+                            label_visibility="collapsed"
+                        )
                         
-                        for _, row in activites_creneau.iterrows():
-                            # Vérification de l'équipe (Correction du .iloc ici via 'row')
-                            if pd.notna(row['Equipe']) and row['Equipe'] not in ["Libre", ""]:
-                                equipe = row['Equipe']
-                                local = row['Local']
-                                current_resp = str(row['Responsable']) if pd.notna(row['Responsable']) else "-- Choisir --"
-                                
-                                # Calcul de l'index pour la selectbox
-                                def_idx = ANIMATEURS.index(current_resp) if current_resp in ANIMATEURS else 0
-
-                                with st.container():
-                                    st.write(f"🏠 **{local}** — 👥 *{equipe}*")
-                                    resp_choisi = st.selectbox(
-                                        f"Responsable {local} {heure}",
-                                        ANIMATEURS,
-                                        index=def_idx,
-                                        key=f"sel_{date_cible}_{heure}_{local}",
-                                        label_visibility="collapsed"
-                                    )
-                                    
-                                    updates_a_envoyer.append({
-                                        "date": str(date_cible),
-                                        "horaire": str(heure),
-                                        "local": str(local),
-                                        "responsable": resp_choisi if resp_choisi != "-- Choisir --" else ""
-                                    })
-                
-                # LE BOUTON DOIT ÊTRE À L'INTÉRIEUR DU "WITH ST.FORM"
-                btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
-                
-                # LOGIQUE D'ENVOI (Après le clic sur le bouton)
-                if btn_save:
-                    if updates_a_envoyer:
+                        # On stocke les changements si un responsable est choisi
+                        updates_a_envoyer.append({
+                            "id": row_id,
+                            "responsable": resp_choisi if resp_choisi != "-- Choisir --" else ""
+                        })
+                    
+                    st.divider()
+                    btn_save = st.form_submit_button(f"💾 ENREGISTRER LE {jour.upper()}", use_container_width=True)
+                    
+                    # LOGIQUE DE MISE À JOUR SUPABASE
+                    if btn_save:
                         try:
-                            payload = {"action": "update_batch_responsables", "data": updates_a_envoyer}
-                            response = requests.post(SCRIPT_URL, json=payload)
-                            if "Success" in response.text:
-                                st.success(f"✅ Mis à jour pour le {jour} !")
+                            with st.spinner("Mise à jour en cours..."):
+                                for upd in updates_a_envoyer:
+                                    # Mise à jour ligne par ligne via l'ID unique
+                                    supabase.table("Planning").update({
+                                        "responsable": upd["responsable"]
+                                    }).eq("id", upd["id"]).execute()
+                                
+                                st.success(f"✅ Responsables enregistrés pour le {jour} !")
+                                st.cache_data.clear() # Vider le cache pour rafraîchir le planning global
+                                time.sleep(1)
                                 st.rerun()
-                            else:
-                                st.error(f"Erreur : {response.text}")
                         except Exception as e:
-                            st.error(f"Erreur de connexion : {e}")
+                            st.error(f"❌ Erreur lors de l'enregistrement : {e}")
 
 elif menu == "🔐 Administration":
     st.markdown("<h1>⚙️ Gestion des Réservations</h1>", unsafe_allow_html=True)
