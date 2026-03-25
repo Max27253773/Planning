@@ -109,8 +109,9 @@ menu = st.sidebar.radio("MENU", menus_base)
 st.sidebar.divider()
 
 maintenant = datetime.now()
-annee_sel = st.sidebar.selectbox("Année",, index=1)
-semaine_sel = st.sidebar.selectbox("Semaine", list(range(1, 54)), index=maintenant.isocalendar()-1)
+annee_sel = st.sidebar.selectbox("Année", liste_annees, index=1)
+liste_semaines = list(range(1, 54))
+semaine_sel = st.sidebar.selectbox("Semaine", liste_semaines, index=maintenant.isocalendar()-1)
 jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 choix_j = st.sidebar.selectbox("Jour", jours_fr, index=min(maintenant.weekday(), 4))
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
