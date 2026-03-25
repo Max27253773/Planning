@@ -536,7 +536,7 @@ elif menu == "🔐 Administration":
                         else:
                             # --- REMPLACEMENT ICI : SUPABASE AU LIEU DE REQUESTS ---
                             try:
-                                supabase.table("PLANNING").insert({
+                                supabase.table("Planning").insert({
                                     "Date_DT": d_add.strftime("%Y-%m-%d"),
                                     "Equipe": eq_add.upper(),
                                     "Horaire": hr_add,
