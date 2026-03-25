@@ -518,28 +518,37 @@ elif menu == "🔐 Administration":
         ].sort_values(by=['Date_DT', 'Horaire'])
         
         with tab1:
-           with st.form("ajouter_form", clear_on_submit=True):
-            d_add = st.date_input("Date", value=datetime.now())
-            eq_add = st.text_input("Equipe", placeholder="Nom")
-            hr_add = st.text_input("Horaire", placeholder="08h00 - 10h00")
-            lc_add = st.selectbox("Local", list(LOCAL_CONFIG.keys()), index=list(LOCAL_CONFIG.keys()).index(local_sel))
-            
-            # Le bouton principal du formulaire
-            if st.form_submit_button("Vérifier et Ajouter"):
-                if eq_add and hr_add:
-                    status, msg = verifier_conflit(df, d_add, hr_add, lc_add, eq_add)
-                    
-                    if status == "block":
-                        st.error(f"❌ {msg}")
-                    elif status == "warn":
-                        st.warning(f"⚠️ {msg}")
-                        # On mémorise les infos pour le bouton de confirmation qui est HORS du formulaire
-                        st.session_state['confirm_add_doublon'] = {"date":d_add, "eq":eq_add, "hr":hr_add, "lc":lc_add}
+            with st.form("ajouter_form", clear_on_submit=True):
+                d_add = st.date_input("Date", value=datetime.now())
+                eq_add = st.text_input("Equipe", placeholder="Nom")
+                hr_add = st.text_input("Horaire", placeholder="08h00 - 10h00")
+                lc_add = st.selectbox("Local", list(LOCAL_CONFIG.keys()), index=list(LOCAL_CONFIG.keys()).index(local_sel))
+                
+                if st.form_submit_button("Vérifier et Ajouter"):
+                    if eq_add and hr_add:
+                        status, msg = verifier_conflit(df, d_add, hr_add, lc_add, eq_add)
+                        
+                        if status == "block":
+                            st.error(f"❌ {msg}")
+                        elif status == "warn":
+                            st.warning(f"⚠️ {msg}")
+                            st.session_state['confirm_add_doublon'] = {"date":d_add, "eq":eq_add, "hr":hr_add, "lc":lc_add}
+                        else:
+                            # --- REMPLACEMENT ICI : SUPABASE AU LIEU DE REQUESTS ---
+                            try:
+                                supabase.table("PLANNING").insert({
+                                    "Date_DT": d_add.strftime("%Y-%m-%d"),
+                                    "Equipe": eq_add.upper(),
+                                    "Horaire": hr_add,
+                                    "Local": lc_add
+                                }).execute()
+                                st.success("✅ Réservation validée !")
+                                time.sleep(1)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erreur Supabase : {e}")
                     else:
-                        requests.post(SCRIPT_URL, data=json.dumps({"action":"add","date":d_add.strftime("%d/%m/%Y"),"equipe":eq_add.upper(),"horaire":hr_add,"local":lc_add}))
-                        st.success("✅ Réservation validée !"), time.sleep(1), st.rerun()
-                else:
-                    st.warning("Veuillez remplir tous les champs.")
+                        st.warning("Veuillez remplir tous les champs.")
 
         # --- ICI ON EST HORS DU FORMULAIRE (aligné sur le 'with') ---
         if st.session_state.get('confirm_add_doublon'):
