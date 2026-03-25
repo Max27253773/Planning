@@ -94,21 +94,89 @@ def verifier_conflit(df, date_test, horaire_test, local_test, equipe_test, exclu
             
     return "ok", ""
     
-# --- 4. AUTHENTIFICATION ---
-if "auth" not in st.session_state: st.session_state["auth"] = False
+# --- 3. INITIALISATION DU SESSION STATE ---
+if "auth" not in st.session_state:
+    st.session_state["auth"] = False
+if "role" not in st.session_state:
+    st.session_state["role"] = None
 
+# --- 4. LOGIQUE VISUELLE DE CONNEXION ---
 if not st.session_state["auth"]:
-    st.markdown("""<style>[data-testid="stSidebar"] { visibility: hidden; } .main .block-container { max-width: 400px; margin: auto; padding-top: 5rem; }</style>""", unsafe_allow_html=True)
-    with st.form("login"):
-        st.subheader("CONNEXION IO")
-        u = st.text_input("Identifiant")
-        p = st.text_input("Mot de passe", type="password")
-        if st.form_submit_button("VALIDER"):
-            creds = {"UT": "Azerty123*", "ANIM": "Anim2026*"}
-            if u in creds and p == creds[u]:
-                st.session_state["auth"], st.session_state["role"] = True, ("Animateur" if u=="ANIM" else "Utilisateur")
+    # Style Néo-Brutaliste personnalisé
+    st.markdown("""
+        <style>
+        /* Cacher la sidebar et le header pendant la connexion */
+        [data-testid="stSidebar"] { visibility: hidden; transform: translateX(-100%); }
+        header { visibility: hidden; }
+        
+        /* Centrage du formulaire */
+        .main .block-container {
+            padding-top: 8rem !important;
+            max-width: 450px !important;
+            margin: auto;
+        }
+        
+        /* Style du conteneur de formulaire (Bordures épaisses + Ombre portée) */
+        div[data-testid="stForm"] {
+            border: 3px solid #000000 !important;
+            border-radius: 15px !important;
+            padding: 40px !important;
+            background-color: #FDFDFD !important;
+            box-shadow: 12px 12px 0px #000000 !important;
+        }
+        
+        /* Style du bouton de validation */
+        button[kind="primaryFormSubmit"], button[data-testid="baseButton-secondaryFormSubmit"] {
+            background-color: #0026C7 !important;
+            color: white !important;
+            border: 3px solid #000000 !important;
+            width: 100% !important;
+            font-weight: bold !important;
+            height: 3.5rem !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.2s;
+        }
+        
+        button[kind="primaryFormSubmit"]:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px #000000;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Logo IO avec dégradé
+    st.markdown("""
+        <div style="background: linear-gradient(90deg, #0026C7 0%, #FFFFFF 50%, #C70000 100%); 
+                    padding: 8px; border-radius: 8px; text-align: center; width: 50%; margin: 0 auto 35px auto; border: 3px solid black; box-shadow: 6px 6px 0px #000000;">
+            <p style="font-size: 24px; color: black; margin: 0; font-family: 'Impact', sans-serif; letter-spacing: 4px;">⌬ IO</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("login_form"):
+        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0; font-family: sans-serif; font-weight: 900;'>CONNEXION</h2>", unsafe_allow_html=True)
+        
+        user_input = st.text_input("IDENTIFIANT", placeholder="Ex: UT ou ANIM")
+        pw_input = st.text_input("MOT DE PASSE", type="password", placeholder="••••••••")
+        
+        submit_auth = st.form_submit_button("SE CONNECTER")
+        
+        if submit_auth:
+            # Identifiants
+            credentials = {
+                "UT": {"pw": "Azerty123*", "role": "Utilisateur"},
+                "ANIM": {"pw": "Anim2026*", "role": "Animateur"}
+            }
+            
+            if user_input in credentials and pw_input == credentials[user_input]["pw"]:
+                st.session_state["auth"] = True
+                st.session_state["role"] = credentials[user_input]["role"]
+                st.success(f"Accès accordé : {st.session_state['role']}")
+                time.sleep(0.6)
                 st.rerun()
-            else: st.error("Identifiants incorrects")
+            else:
+                st.error("Identifiants ou mot de passe incorrects.")
+    
     st.stop()
 
 # --- 5. CONFIGURATION VISUELLE ---
