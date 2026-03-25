@@ -124,9 +124,6 @@ if st.session_state.get("role") == "Animateur":
     st.sidebar.title("🔐 Accès ADMIN")
     admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
     
-    # --- CONFIGURATION SÉCURITÉ ---
-    ADMIN_PASSWORD = "1234"
-    
     # Vérification de la clé
     is_admin = (admin_key == ADMIN_PASSWORD)
     if is_admin:
