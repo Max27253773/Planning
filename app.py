@@ -115,7 +115,6 @@ if st.session_state.get("role") == "Animateur":
 menu = st.sidebar.radio("MENU", menus_base)
 st.sidebar.divider()
 
-# 2. On définit TOUTES les variables avant de les utiliser dans les selectbox
 maintenant = datetime.now()
 liste_annees =
 liste_semaines = list(range(1, 54))
