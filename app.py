@@ -107,21 +107,24 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 # --- 6. NAVIGATION & SIDEBAR ---
 df = load_data()
 
-# Gestion des menus
+# Choix du menu simplifié
 menus = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 if st.session_state.get("role") == "Animateur":
-    menus += ["🎯 Assignation Responsables", "🔐 Administration"]
+    menus.append("🎯 Assignation Responsables")
+    menus.append("🔐 Administration")
 
 menu = st.sidebar.radio("MENU", menus)
 st.sidebar.divider()
 
-# --- PARAMÈTRES DE TEMPS ---
+# Paramètres de temps sans aucune liste complexe dans les parenthèses
 maintenant = datetime.now()
+annees =
+semaines = list(range(1, 54))
+jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 
-# CORRECTION FINALE : Une seule virgule après chaque argument, aucun vide.
-annee_sel = st.sidebar.selectbox("Année", index=1)
-semaine_sel = st.sidebar.selectbox("Semaine", list(range(1, 54)), index=maintenant.isocalendar()-1)
-choix_j = st.sidebar.selectbox("Jour", ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"], index=min(maintenant.weekday(), 4))
+annee_sel = st.sidebar.selectbox("Année", annees, index=1)
+semaine_sel = st.sidebar.selectbox("Semaine", semaines, index=maintenant.isocalendar()-1)
+choix_j = st.sidebar.selectbox("Jour", jours, index=min(maintenant.weekday(), 4))
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
 st.sidebar.divider()
