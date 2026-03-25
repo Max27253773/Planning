@@ -104,27 +104,50 @@ LOCAL_CONFIG = {
 }
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
-# --- 6. NAVIGATION & SIDEBAR ---
+# --- INTERFACE ---
 df = load_data()
+# --- 1. DÉFINITION DE LA LISTE DE BASE ---
+# Accessible à tout le monde
+menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# Choix du menu simplifié
-menus = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
+# --- 2. LOGIQUE RÉSERVÉE À L'ANIMATEUR ---
 if st.session_state.get("role") == "Animateur":
-    menus.append("🎯 Assignation Responsables")
-    menus.append("🔐 Administration")
+    # Insertion des options supplémentaires dans la liste
+    menus_de_base.insert(4, "🎯 Assignation Responsables")
+    menus_de_base.insert(5, "🔐 Administration")
 
-menu = st.sidebar.radio("MENU", menus)
+    # Affichage du menu principal
+    menu = st.sidebar.radio("MENU", menus_de_base)
+
+    # BLOC ACCÈS ADMIN (Visible uniquement pour l'Animateur)
+    st.sidebar.markdown("---")
+    st.sidebar.title("🔐 Accès ADMIN")
+    admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
+    
+    # Vérification de la clé
+    is_admin = (admin_key == ADMIN_PASSWORD)
+    if is_admin:
+        st.sidebar.success("Mode Administrateur Actif")
+    elif admin_key != "":
+        st.sidebar.error("Mot de passe incorrecte")
+
+else:
+    # --- 3. AFFICHAGE POUR L'UTILISATEUR SIMPLE (UT) ---
+    menu = st.sidebar.radio("MENU", menus_de_base)
+    is_admin = False # Sécurité pour bloquer les fonctions admin
+
 st.sidebar.divider()
 
-# Paramètres de temps sans aucune liste complexe dans les parenthèses
+# --- CALCUL AUTOMATIQUE DATE/SEMAINE ---
 maintenant = datetime.now()
-annees =
-semaines = list(range(1, 54))
-jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+annee_actuelle = maintenant.year
+semaine_actuelle = maintenant.isocalendar()[1]
+jour_actuel_idx = maintenant.weekday() 
 
-annee_sel = st.sidebar.selectbox("Année", annees, index=1)
-semaine_sel = st.sidebar.selectbox("Semaine", semaines, index=maintenant.isocalendar()-1)
-choix_j = st.sidebar.selectbox("Jour", jours, index=min(maintenant.weekday(), 4))
+annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
+semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=semaine_actuelle - 1)
+jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
 st.sidebar.divider()
