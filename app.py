@@ -106,6 +106,8 @@ QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
 # --- INTERFACE ---
 df = load_data()
+df['Date_DT'] = pd.to_datetime(df['Date_DT'], errors='coerce')
+
 # --- 1. DÉFINITION DE LA LISTE DE BASE ---
 # Accessible à tout le monde
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
