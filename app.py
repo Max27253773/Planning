@@ -149,7 +149,7 @@ jour_actuel_idx = maintenant.weekday()
 
 annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=semaine_actuelle - 1)
-jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
@@ -159,7 +159,7 @@ mode_vue = st.sidebar.segmented_control("Format", ["Semaine", "Jour"], default="
 # Calcul de la date précise
 monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).weekday())) + timedelta(weeks=semaine_sel-1)
 week_days = [monday + timedelta(days=i) for i in range(5)]
-d_active = week_days[jours_fr_liste.index(choix_j)]
+d_active = week_days[jours_fr.index(choix_j)]
 
 # --- 7. CSS & DESIGN ---
 current_color = LOCAL_CONFIG.get(local_sel, "#333")
