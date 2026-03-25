@@ -150,7 +150,7 @@ jour_actuel_idx = maintenant.weekday()
 annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=semaine_actuelle - 1)
 jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
+choix_j_global = st.sidebar.selectbox("Jour", jours_fr, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
 st.sidebar.divider()
