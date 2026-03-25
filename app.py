@@ -93,6 +93,7 @@ def verifier_conflit(df, date_test, horaire_test, local_test, equipe_test, exclu
             return "block", f"Le local {local_test} est déjà occupé sur ce créneau."
             
     return "ok", ""
+    
 # --- 4. AUTHENTIFICATION ---
 if "auth" not in st.session_state: st.session_state["auth"] = False
 
@@ -111,6 +112,66 @@ if not st.session_state["auth"]:
     st.stop()
 
 # --- 5. CONFIGURATION VISUELLE ---
+
+# --- 3. LOGIQUE VISUELLE DE CONNEXION ---
+if not st.session_state["auth"]:
+    st.markdown("""
+        <style>
+        [data-testid="stSidebar"] { visibility: hidden; transform: translateX(-100%); }
+        header { visibility: hidden; }
+        .main .block-container {
+            padding-top: 8rem !important;
+            max-width: 450px !important;
+            margin: auto;
+        }
+        div[data-testid="stForm"] {
+            border: 2px solid #000000 !important;
+            border-radius: 15px !important;
+            padding: 40px !important;
+            background-color: #FDFDFD !important;
+            box-shadow: 10px 10px 0px #000000 !important;
+        }
+        button[kind="primaryFormSubmit"] {
+            background-color: #0026C7 !important;
+            color: white !important;
+            border: 2px solid #000000 !important;
+            width: 100% !important;
+            font-weight: bold !important;
+            height: 3rem !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+        <div style="background: linear-gradient(90deg, #0026C7 0%, #FFFFFF 50%, #C70000 100%); 
+                    padding: 6px; border-radius: 6px; text-align: center; width: 45%; margin: 0 auto 30px auto; border: 2px solid black;">
+            <p style="font-size: 20px; color: black; margin: 0; font-family: 'Impact'; letter-spacing: 3px;">⌬ IO</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("login_form"):
+        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0;'>CONNEXION</h2>", unsafe_allow_html=True)
+        user_input = st.text_input("Identifiant")
+        pw_input = st.text_input("Mot de passe", type="password")
+        submit_auth = st.form_submit_button("SE CONNECTER")
+        
+        if submit_auth:
+            # Dictionnaire des accès avec rôles
+            credentials = {
+                "UT": {"pw": "Azerty123*", "role": "Utilisateur"},
+                "ANIM": {"pw": "Anim2026*", "role": "Animateur"}
+            }
+            
+            if user_input in credentials and pw_input == credentials[user_input]["pw"]:
+                st.session_state["auth"] = True
+                st.session_state["role"] = credentials[user_input]["role"]
+                st.success(f"Accès en tant qu'{st.session_state['role']}")
+                time.sleep(0.5)
+                st.rerun()
+            else:
+                st.error("Identifiants incorrects")
+    st.stop()
+
 LOCAL_CONFIG = {
     "JUP": "#1976D2", "MIN": "#C2185B", "JUN": "#757575", "BAC": "#388E3C", 
     "MARS": "#D32F2F", "SAT": "#E65100", "CRO": "#A1887F", "NEK": "#C5A000", 
