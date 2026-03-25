@@ -14,15 +14,16 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # --- 2. CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="IO Planning", layout="wide", initial_sidebar_state="expanded")
 
-# --- 3. FONCTIONS MOTEUR (BASE DE DONNÉES) ---
+# --- 3. FONCTIONS MOTEUR (CORRIGÉES AVEC "Planning") ---
+
 @st.cache_data(ttl=2)
 def load_data():
     try:
-        response = supabase.table("planning").select("*").execute()
+        # Changement ici : "Planning" au lieu de "planning"
+        response = supabase.table("Planning").select("*").execute()
         data = pd.DataFrame(response.data)
         if not data.empty:
             data['Date_DT'] = pd.to_datetime(data['date'], errors='coerce')
-            # Harmonisation pour l'interface
             data = data.rename(columns={
                 "equipe": "Equipe", "horaire": "Horaire", "local": "Local", 
                 "responsable": "Responsable", "date": "Date"
@@ -35,20 +36,24 @@ def load_data():
 
 def db_add(date, equipe, horaire, local):
     payload = {"date": str(date), "equipe": equipe.upper(), "horaire": horaire, "local": local, "responsable": ""}
-    supabase.table("planning").insert(payload).execute()
+    # Changement ici : "Planning"
+    supabase.table("Planning").insert(payload).execute()
     st.cache_data.clear()
 
 def db_update(row_id, date, equipe, horaire, local):
     payload = {"date": str(date), "equipe": equipe.upper(), "horaire": horaire, "local": local}
-    supabase.table("planning").update(payload).eq("id", row_id).execute()
+    # Changement ici : "Planning"
+    supabase.table("Planning").update(payload).eq("id", row_id).execute()
     st.cache_data.clear()
 
 def db_delete(row_id):
-    supabase.table("planning").delete().eq("id", row_id).execute()
+    # Changement ici : "Planning"
+    supabase.table("Planning").delete().eq("id", row_id).execute()
     st.cache_data.clear()
 
 def db_update_resp(row_id, nom_resp):
-    supabase.table("planning").update({"responsable": nom_resp}).eq("id", row_id).execute()
+    # Changement ici : "Planning"
+    supabase.table("Planning").update({"responsable": nom_resp}).eq("id", row_id).execute()
     st.cache_data.clear()
 
 def extraire_heures(horaire_str):
