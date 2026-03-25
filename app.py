@@ -118,15 +118,15 @@ LOCAL_CONFIG = {
 }
 QUARTS_HEURES = [f"{h:02d}:{m}" for h in range(6, 21) for m in ["00", "30"]]
 
-# --- INTERFACE ---
+# --- 7. INTERFACE ---
 df = load_data()
 df['Date_DT'] = pd.to_datetime(df['Date_DT'], errors='coerce')
 
-# --- 1. DÉFINITION DE LA LISTE DE BASE ---
+# --- 7.1. DÉFINITION DE LA LISTE DE BASE ---
 # Accessible à tout le monde
 menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# --- 2. LOGIQUE RÉSERVÉE À L'ANIMATEUR ---
+# --- 7.2. LOGIQUE RÉSERVÉE À L'ANIMATEUR ---
 if st.session_state.get("role") == "Animateur":
     # Insertion des options supplémentaires dans la liste
     menus_de_base.insert(4, "🎯 Assignation Responsables")
@@ -149,7 +149,7 @@ if st.session_state.get("role") == "Animateur":
         st.sidebar.error("Mot de passe incorrecte")
 
 else:
-    # --- 3. AFFICHAGE POUR L'UTILISATEUR SIMPLE (UT) ---
+    # --- 7.3. AFFICHAGE POUR L'UTILISATEUR SIMPLE (UT) ---
     menu = st.sidebar.radio("MENU", menus_de_base)
     is_admin = False # Sécurité pour bloquer les fonctions admin
 
@@ -315,7 +315,7 @@ if menu == "📅 Planning":
                     st.markdown(f"<div class='slot-container-week'><div class='{grid_class}'></div>{html_bloc}</div>", unsafe_allow_html=True)
 
 elif menu == "🖥️ Supervision":
-    st.markdown("<h1>🖥️ Vue d'ensemble des Locaux</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🖥️ Vue d'ensemble des locaux</h1>", unsafe_allow_html=True)
     
     # On utilise choix_j_global (sidebar) et d (calculé plus haut)
     st.info(f"Visualisation de tous les locaux pour le **{choix_j_global} {d.strftime('%d/%m/%Y')}**")
@@ -381,7 +381,7 @@ elif menu == "🔍 Rechercher":
     st.markdown("<h1>🔍 Rechercher par Équipe</h1>", unsafe_allow_html=True)
     
     # Zone de recherche
-    nom_cherche = st.text_input("Entrez le nom de l'équipe (ex: ECOLE)", "").upper()
+    nom_cherche = st.text_input("Entrez le nom de l'équipe", "").upper()
     
     if nom_cherche:
         # On s'assure que les noms de colonnes correspondent (Equipe, Date_DT)
