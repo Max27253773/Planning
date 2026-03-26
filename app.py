@@ -4,7 +4,6 @@ import time
 import re
 from datetime import datetime, timedelta
 from supabase import create_client
-from streamlit_option_menu import option_menu
 
 # --- 1. CONFIGURATION & CONNEXION SUPABASE ---
 # Remplace par tes vraies clés si celles-ci sont des exemples
