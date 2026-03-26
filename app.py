@@ -288,7 +288,6 @@ with st.sidebar:
     # BLOC ACCÈS ADMIN (Uniquement pour l'Animateur)
     is_admin = False
     if st.session_state.get("role") == "Animateur":
-        st.markdown("---")
         with st.expander("🔐 ACCÈS ADMIN", expanded=False):
             admin_key = st.text_input("Mot de passe", type="password", key="global_pwd")
             if admin_key == "1234":
