@@ -359,10 +359,10 @@ jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
-# --- OPTIONS D'AFFICHAGE (STYLE MENU) ---
+# --- OPTIONS D'AFFICHAGE ---
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-# Titre stylisé (plus élégant)
+# Titre avec icône Bootstrap
 st.sidebar.markdown("""
     <div style='display: flex; align-items: center; margin-left: 5px; margin-bottom: 8px;'>
         <i class="bi bi-phone" style="font-size: 16px; color: #444; margin-right: 10px;"></i>
@@ -372,13 +372,13 @@ st.sidebar.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Le contrôle segmenté (on utilise une clé unique pour le CSS)
+# Correction de la SyntaxError ici (vérifie bien la parenthèse finale)
 mode_vue = st.sidebar.segmented_control(
     "vue_format", 
     ["Semaine", "Jour"], 
     default="Jour", 
-    label_visibility="collapsed",
-    key="custom_segmented"
+    label_visibility="collapsed"
+)
 
 # --- COPYRIGHT ET SIGNATURE ---
 st.sidebar.divider()
