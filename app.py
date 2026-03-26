@@ -402,6 +402,7 @@ text_on_color = "#000000" if local_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 # --- CSS COMPLET ---
 st.markdown(f"""
     <style>
+    /* Fond et Sidebar */
     .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ 
         background-color: #f8f9fa !important; 
@@ -409,6 +410,7 @@ st.markdown(f"""
     }}
     h1 {{ font-size: 1.8rem !important; font-weight: 900 !important; color: #333 !important; }}
     
+    /* Planning */
     .planning-frame {{
         position: relative; width: 100%; background: #FFFFFF;
         height: 1260px; border: 1px solid #eee; margin-bottom: 30px;
@@ -424,6 +426,35 @@ st.markdown(f"""
         display: flex; align-items: center; justify-content: center; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;
     }}
+
+    /* --- AJOUTS RÉCENTS POUR LE DESIGN ÉPURÉ --- */
+
+    /* 1. Style du Segmented Control (Jour/Semaine) */
+    div[data-testid="stSegmentedControl"] {{
+        background-color: #eee !important;
+        border-radius: 12px !important;
+        padding: 4px !important;
+    }}
+    div[data-testid="stSegmentedControl"] button {{
+        border: none !important;
+        background-color: transparent !important;
+        color: #666 !important;
+    }}
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {{
+        background-color: white !important;
+        color: black !important;
+        font-weight: 600 !important;
+        box-shadow: 0px 3px 8px rgba(0,0,0,0.08) !important;
+        border-radius: 10px !important;
+    }}
+
+    /* 2. Style des Selectbox (Année, Semaine, Local) */
+    div[data-baseweb="select"] > div {{
+        background-color: #FFFFFF !important;
+        border-radius: 10px !important;
+        border: 1px solid #eee !important;
+    }}
+
     </style>
     """, unsafe_allow_html=True)
 
