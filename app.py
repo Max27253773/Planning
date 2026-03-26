@@ -285,16 +285,35 @@ with st.sidebar:
     }
     menu = mapping.get(selected_nav)
 
-    # BLOC ACCÈS ADMIN (Uniquement pour l'Animateur)
+    # BLOC ACCÈS ADMIN STYLISÉ (Sans barre horizontale)
     is_admin = False
     if st.session_state.get("role") == "Animateur":
-        with st.expander("🔐 ACCÈS ADMIN", expanded=False):
-            admin_key = st.text_input("Mot de passe", type="password", key="global_pwd")
+        # Conteneur blanc pour l'effet "Bulle"
+        with st.container():
+            st.markdown("""
+                <div style='background-color: white; border-radius: 12px; padding: 12px; 
+                box-shadow: 0px 4px 12px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; margin-bottom: 10px;'>
+                    <p style='margin: 0; color: #444; font-size: 14px; font-weight: 600; text-align: center;'>
+                        🔐 ACCÈS ADMIN
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Champ de saisie sans label (plus épuré)
+            admin_key = st.text_input(
+                "Clé d'accès", 
+                type="password", 
+                key="global_pwd", 
+                label_visibility="collapsed", 
+                placeholder="Mot de passe..."
+            )
+            
+            # Feedback discret
             if admin_key == "1234":
                 is_admin = True
-                st.success("Mode Admin Actif")
+                st.markdown("<p style='color: #28a745; font-size: 12px; text-align: center; font-weight: 500;'>✓ Mode Admin Actif</p>", unsafe_allow_html=True)
             elif admin_key != "":
-                st.error("Incorrect")
+                st.markdown("<p style='color: #dc3545; font-size: 12px; text-align: center; font-weight: 500;'>✗ Incorrect</p>", unsafe_allow_html=True)
 
 # --- CALCUL AUTOMATIQUE DATE/SEMAINE ---
 maintenant = datetime.now()
