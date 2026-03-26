@@ -172,12 +172,11 @@ if not st.session_state["auth"]:
 
     # Logo IO avec dégradé
     st.markdown("""
-        <div style="background: linear-gradient(90deg, #0026C7 0%, #FFFFFF 50%, #C70000 100%); 
-                    padding: 8px; border-radius: 8px; text-align: center; width: 50%; margin: 0 auto 35px auto; border: 3px solid black; box-shadow: 6px 6px 0px #000000;">
-            <p style="font-size: 24px; color: black; margin: 0; font-family: 'Impact', sans-serif; letter-spacing: 4px;">⌬ IO</p>
+        <div style="text-align: center; width: 60%; margin: 0 auto 30px auto;">
+            <p style="font-size: 32px; color: #333; margin: 0; font-family: sans-serif; font-weight: 300; letter-spacing: 6px;">⌬ IO</p>
         </div>
     """, unsafe_allow_html=True)
-
+    
     with st.form("login_form"):
         st.markdown("<h2 style='text-align: center; color: black; margin-top: 0; font-family: sans-serif; font-weight: 900;'>CONNEXION</h2>", unsafe_allow_html=True)
         
