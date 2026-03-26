@@ -234,78 +234,50 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 7. INTERFACE (DESIGN MODERNE) ---
+# --- 7. INTERFACE ---
 df = load_data()
 df['Date_DT'] = pd.to_datetime(df['Date_DT'], errors='coerce')
 
-# --- 7.1. CONFIGURATION DU MENU ---
-opts = ["Planning", "Supervision", "Rechercher", "Stats"]
-icons = ["calendar3", "display", "search", "bar-chart"]
+# --- 7.1. DÉFINITION DE LA LISTE DE BASE ---
+# Accessible à tout le monde
+menus_de_base = ["📅 Planning", "🖥️ Supervision", "🔍 Rechercher", "📊 Statistiques"]
 
-# Ajout des options Animateur
+# --- 7.2. LOGIQUE RÉSERVÉE À L'ANIMATEUR ---
 if st.session_state.get("role") == "Animateur":
-    opts += ["Assignation", "Administration"]
-    icons += ["person-check", "gear"]
+    # Insertion des options supplémentaires dans la liste
+    menus_de_base.insert(4, "🎯 Assignation Responsables")
+    menus_de_base.insert(5, "🔐 Administration")
 
-# --- 7.2. AFFICHAGE DE LA SIDEBAR ---
-with st.sidebar:
-    st.markdown("<h2 style='text-align: center; color: #444; letter-spacing: 2px;'>⌬ IO</h2>", unsafe_allow_html=True)
-    st.divider()
+    # Affichage du menu principal
+    menu = st.sidebar.radio("MENU", menus_de_base)
+
+    # BLOC ACCÈS ADMIN (Visible uniquement pour l'Animateur)
+    st.sidebar.markdown("---")
+    st.sidebar.title("🔐 Accès ADMIN")
+    admin_key = st.sidebar.text_input("Mot de passe", type="password", key="global_pwd")
+    ADMIN_PASSWORD = "1234"
     
-    # Le menu stylisé (Remplace st.sidebar.radio)
-    selected_nav = option_menu(
-        menu_title=None,
-        options=opts,
-        icons=icons,
-        default_index=0,
-        styles={
-            "container": {"padding": "5!important", "background-color": "transparent"},
-            "icon": {"color": "#444", "font-size": "18px"}, 
-            "nav-link": {
-                "font-size": "15px", 
-                "text-align": "left", 
-                "margin": "5px", 
-                "font-family": "sans-serif",
-                "color": "#444"
-            },
-            "nav-link-selected": {
-                "background-color": "white", 
-                "color": "black", 
-                "font-weight": "600",
-                "box-shadow": "0px 4px 12px rgba(0,0,0,0.08)",
-                "border-radius": "12px"
-            },
-        }
-    )
+    # Vérification de la clé
+    is_admin = (admin_key == ADMIN_PASSWORD)
+    if is_admin:
+        st.sidebar.success("Mode Administrateur Actif")
+    elif admin_key != "":
+        st.sidebar.error("Mot de passe incorrecte")
 
-    # Mapping pour la compatibilité avec le reste de ton code
-    mapping = {
-        "Planning": "📅 Planning", "Supervision": "🖥️ Supervision", 
-        "Rechercher": "🔍 Rechercher", "Stats": "📊 Statistiques",
-        "Assignation": "🎯 Assignation Responsables", "Administration": "🔐 Administration"
-    }
-    menu = mapping.get(selected_nav)
-
-    # BLOC ACCÈS ADMIN (Uniquement pour l'Animateur)
-    is_admin = False
-    if st.session_state.get("role") == "Animateur":
-        st.markdown("---")
-        with st.expander("🔐 ACCÈS ADMIN", expanded=False):
-            admin_key = st.text_input("Mot de passe", type="password", key="global_pwd")
-            if admin_key == "1234":
-                is_admin = True
-                st.success("Mode Admin Actif")
-            elif admin_key != "":
-                st.error("Incorrect")
+else:
+    # --- 7.3. AFFICHAGE POUR L'UTILISATEUR SIMPLE (UT) ---
+    menu = st.sidebar.radio("MENU", menus_de_base)
+    is_admin = False # Sécurité pour bloquer les fonctions admin
 
 st.sidebar.divider()
 
 # --- CALCUL AUTOMATIQUE DATE/SEMAINE ---
 maintenant = datetime.now()
 annee_actuelle = maintenant.year
-semaine_actuelle = maintenant.isocalendar()
+semaine_actuelle = maintenant.isocalendar()[1]
+jour_actuel_idx = maintenant.weekday() 
 
-annee_sel = st.sidebar.selectbox("Année",, index=1)
+annee_sel = st.sidebar.selectbox("Année", [2025, 2026, 2027], index=1)
 semaine_sel = st.sidebar.selectbox("Semaine", range(1, 54), index=semaine_actuelle - 1)
 jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
@@ -315,59 +287,64 @@ st.sidebar.divider()
 st.sidebar.subheader("📱 Options d'affichage")
 mode_vue = st.sidebar.segmented_control("Format", ["Semaine", "Jour"], default="Jour")
 
-# --- COPYRIGHT ---
+# --- COPYRIGHT ET SIGNATURE ---
 st.sidebar.divider()
 st.sidebar.markdown(
     """
     <div style='text-align: center; color: #666666; font-size: 0.8rem; padding: 10px;'>
         © 2026 <b>.........</b><br>
+        Tous droits réservés<br>
         <span style='font-size: 0.7rem;'>Version Bêta - Planning </span>
     </div>
     """, 
     unsafe_allow_html=True
 )
 
-# --- LOGIQUE DATE ---
 monday = (datetime(annee_sel, 1, 4) - timedelta(days=datetime(annee_sel, 1, 4).weekday())) + timedelta(weeks=semaine_sel-1)
 week_days = [monday + timedelta(days=i) for i in range(5)]
+
 d = week_days[jours_fr_liste.index(choix_j_global)]
 
 current_color = LOCAL_CONFIG.get(local_sel, "#000000")
-text_on_color = "#000000" if local_sel in ["PHO", "NEK"] else "#FFFFFF"
+text_on_color = "#000000" if local_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 
 # --- CSS COMPLET ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #FFFFFF !important; }}
-    [data-testid="stSidebar"] {{ 
-        background-color: #f8f9fa !important; 
-        border-right: 1px solid #eee !important; 
-    }}
-    h1 {{ font-size: 1.8rem !important; font-weight: 900 !important; color: #333 !important; }}
+    [data-testid="stSidebar"] {{ background-color: #E2E8F0 !important; border-right: 2px solid #000000 !important; }}
+    h1 {{ font-size: 1.8rem !important; font-weight: 900 !important; color: #000000 !important; }}
     
+    /* Mode Jour : Cadre ajusté pour finir à 20h00 */
     .planning-frame {{
         position: relative; width: 100%; background: #FFFFFF;
-        height: 1260px; border: 1px solid #eee; margin-bottom: 30px;
-        overflow: hidden; border-radius: 15px;
+        height: 1260px; /* Hauteur exacte pour 6h-20h (14h * 90px) */
+        border: 1px solid #000; margin-bottom: 30px;
+        overflow: hidden;
     }}
     .hour-row-fixed {{
         position: absolute; left: 0; right: 0; height: 45px;
-        display: flex; align-items: center; border-bottom: 1px dashed #eee;
+        display: flex; align-items: center; border-bottom: 1px dashed #CCC; box-sizing: border-box;
     }}
+    
+    /* Mode Semaine : Grille flexible */
+    .slot-container-week {{ position: relative; width: 100%; height: 45px; box-sizing: border-box; }}
+    .grid-line-hour {{ border-bottom: 2px solid #333333 !important; height: 45px; box-sizing: border-box; }}
+    .grid-line-min {{ border-bottom: 1px dashed #777777 !important; height: 45px; box-sizing: border-box; }}
+
     .calendar-cell-unique {{ 
-        position: absolute; z-index: 100; border-radius: 8px;
-        color: {text_on_color} !important; text-align: center; font-weight: 600; 
+        position: absolute; z-index: 100; border: 2px solid #000000; 
+        color: {text_on_color} !important; text-align: center; font-weight: 900; 
         display: flex; align-items: center; justify-content: center; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;
+        box-shadow: 2px 2px 0px rgba(0,0,0,1); box-sizing: border-box;
     }}
+    
+    .stButton button {{ width: 100% !important; font-weight: bold !important; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- FILTRAGE SÉCURISÉ ---
-if not df.empty:
-    df_view = df[df['Local'].str.strip().str.upper() == local_sel.upper()]
-else:
-    df_view = pd.DataFrame()
+df_view = df[df['Local'].str.strip().str.upper() == local_sel.upper()]
+
 
 # --- NAVIGATION ---
 
