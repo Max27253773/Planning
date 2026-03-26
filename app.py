@@ -259,6 +259,7 @@ with st.sidebar:
         icons=icons,
         default_index=0,
         styles={
+            "container": {"padding": "5!important", "background-color": "transparent"},
             "icon": {"color": "#444", "font-size": "18px"}, 
             "nav-link": {
                 "font-size": "15px", 
