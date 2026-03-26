@@ -404,7 +404,7 @@ text_on_color = "#000000" if local_sel in ["PHOBOS", "NEKKAR"] else "#FFFFFF"
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #FFFFFF !important; }}
-    [data-testid="stSidebar"] {{ background-color: #D9D9D9 !important; border-right: 2px solid #000000 !important; }}
+    [data-testid="stSidebar"] {{ background-color: #F0F0F0 !important; border-right: 2px solid #000000 !important; }}
     h1 {{ font-size: 1.8rem !important; font-weight: 900 !important; color: #000000 !important; }}
     
     /* Mode Jour : Cadre ajusté pour finir à 20h00 */
