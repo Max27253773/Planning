@@ -250,7 +250,6 @@ if st.session_state.get("role") == "Animateur":
 # --- 7.2. AFFICHAGE DE LA SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #444; letter-spacing: 2px;'>⌬ IO</h2>", unsafe_allow_html=True)
-    st.divider()
     
     # Le menu stylisé (Remplace st.sidebar.radio)
     selected_nav = option_menu(
