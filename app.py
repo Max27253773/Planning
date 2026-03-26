@@ -346,6 +346,7 @@ with st.sidebar:
             st.markdown("<p style='color: #28a745; font-size: 12px; text-align: center; font-weight: 500; margin-top: 5px;'>✓ Mode Admin Actif</p>", unsafe_allow_html=True)
         elif admin_key != "":
             st.markdown("<p style='color: #dc3545; font-size: 12px; text-align: center; font-weight: 500; margin-top: 5px;'>✗ Mot de passe incorrect</p>", unsafe_allow_html=True)
+            
 # --- CALCUL AUTOMATIQUE DATE/SEMAINE ---
 maintenant = datetime.now()
 annee_actuelle = maintenant.year
@@ -358,9 +359,24 @@ jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
+# --- OPTIONS AFFICHAGE (DESIGN ÉPURÉ) ---
+st.sidebar.markdown("<br>", unsafe_allow_html=True) # Un peu d'espace avant
 
-st.sidebar.subheader("📱 Options d'affichage")
-mode_vue = st.sidebar.segmented_control("Format", ["Semaine", "Jour"], default="Jour")
+# Titre stylisé (plus petit et élégant que subheader)
+st.sidebar.markdown("""
+    <p style='color: #888; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; margin-left: 5px;'>
+        📱 OPTIONS D'AFFICHAGE
+    </p>
+""", unsafe_allow_html=True)
+
+# Le contrôle segmenté
+# Note : On utilise label_visibility="collapsed" pour ne pas doubler le titre
+mode_vue = st.sidebar.segmented_control(
+    "Format", 
+    ["Semaine", "Jour"], 
+    default="Jour", 
+    label_visibility="collapsed"
+)
 
 # --- COPYRIGHT ET SIGNATURE ---
 st.sidebar.divider()
