@@ -178,21 +178,20 @@ if not st.session_state["auth"]:
         </div>
     """, unsafe_allow_html=True)
     
-    with st.form("login_form"):
-        st.markdown("<h2 style='text-align: center; color: black; margin-top: 0; font-family: sans-serif; font-weight: 900;'>CONNEXION</h2>", unsafe_allow_html=True)
-        
-        user_input = st.text_input("IDENTIFIANT")
-        pw_input = st.text_input("MOT DE PASSE", type="password", placeholder="••••••••")
-        
-        submit_auth = st.form_submit_button("SE CONNECTER")
-        
-       # Imaginons que ton bouton est créé juste au-dessus
-        submit_auth = st.button("Se connecter")
-        
-        if submit_auth:
-            # --- DEBUT DU BLOC (Tout doit être aligné ici) ---
+  with st.form("login_form"):
+    st.markdown("<h2 style='text-align: center; color: black; margin-top: 0; font-family: sans-serif; font-weight: 900;'>CONNEXION</h2>", unsafe_allow_html=True)
+    
+    user_input = st.text_input("IDENTIFIANT")
+    pw_input = st.text_input("MOT DE PASSE", type="password", placeholder="••••••••")
+    
+    submit_auth = st.form_submit_button("SE CONNECTER")
+    
+    if submit_auth:
+        try:
+            # On récupère les identifiants depuis le coffre-fort (secrets.toml)
             credentials = st.secrets["credentials"]
             
+            # Vérification
             if user_input in credentials and pw_input == credentials[user_input]["pw"]:
                 st.session_state["auth"] = True
                 st.session_state["role"] = credentials[user_input]["role"]
@@ -201,7 +200,10 @@ if not st.session_state["auth"]:
                 st.rerun()
             else:
                 st.error("Identifiants ou mot de passe incorrects.")
-            # --- FIN DU BLOC ---
+                
+        except KeyError:
+            # Ce message s'affiche si la section [credentials] est absente des secrets
+            st.error("Erreur : La configuration des accès est manquante dans les secrets.")
     
     st.stop()
 
