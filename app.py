@@ -435,25 +435,25 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-/* Encadré gris clair pour le sélecteur d'affichage */
-div[data-testid="stSegmentedControl"] {
-    background-color: #f0f2f6 !important; /* Le fond gris clair */
-    border-radius: 12px !important;
-    padding: 4px !important;
-}
-
-/* Le bouton sélectionné devient la bulle blanche cliquable */
-div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-    background-color: white !important;
-    color: black !important;
-    border-radius: 9px !important;
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.05) !important;
-}
-
-/* On retire les bordures par défaut pour le look épuré */
-div[data-testid="stSegmentedControl"] button {
-    border: none !important;
-}
+    /* Encadré gris clair pour le sélecteur d'affichage */
+    div[data-testid="stSegmentedControl"] {
+        background-color: #f0f2f6 !important; /* Le fond gris clair */
+        border-radius: 12px !important;
+        padding: 4px !important;
+    }
+    
+    /* Le bouton sélectionné devient la bulle blanche cliquable */
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+        background-color: white !important;
+        color: black !important;
+        border-radius: 9px !important;
+        box-shadow: 0px 2px 6px rgba(0,0,0,0.05) !important;
+    }
+    
+    /* On retire les bordures par défaut pour le look épuré */
+    div[data-testid="stSegmentedControl"] button {
+        border: none !important;
+    }
 
 df_view = df[df['Local'].str.strip().str.upper() == local_sel.upper()]
 
