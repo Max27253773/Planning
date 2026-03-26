@@ -104,42 +104,51 @@ if "role" not in st.session_state:
 if not st.session_state["auth"]:
     st.markdown("""
         <style>
-        /* Cacher la sidebar et le header pendant la connexion */
+        /* Cache la sidebar et le header pour un focus total */
         [data-testid="stSidebar"] { visibility: hidden; transform: translateX(-100%); }
         header { visibility: hidden; }
         
-        /* Centrage du formulaire */
+        /* Centrage et conteneur principal */
         .main .block-container {
-            padding-top: 8rem !important;
-            max-width: 450px !important;
+            padding-top: 6rem !important;
+            max-width: 420px !important;
             margin: auto;
         }
-        
-        /* Style du conteneur de formulaire (Bordures épaisses + Ombre portée) */
+
+        /* Le Formulaire : Bordures 3px + Ombre portée noire (Brutalisme) */
         div[data-testid="stForm"] {
             border: 3px solid #000000 !important;
-            border-radius: 15px !important;
-            padding: 40px !important;
-            background-color: #FDFDFD !important;
+            border-radius: 0px !important; /* Carré pour le style brutaliste */
+            padding: 3rem !important;
+            background-color: #FFFFFF !important;
             box-shadow: 12px 12px 0px #000000 !important;
         }
-        
-        /* Style du bouton de validation */
+
+        /* Style des champs de saisie */
+        .stTextInput input {
+            border: 2px solid black !important;
+            border-radius: 0px !important;
+            padding: 10px !important;
+        }
+
+        /* Le Bouton : Bleu électrique + Bordure noire */
         button[kind="primaryFormSubmit"], button[data-testid="baseButton-secondaryFormSubmit"] {
             background-color: #0026C7 !important;
             color: white !important;
             border: 3px solid #000000 !important;
+            border-radius: 0px !important;
             width: 100% !important;
             font-weight: bold !important;
+            font-family: 'Impact', sans-serif !important;
+            letter-spacing: 1px !important;
             height: 3.5rem !important;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.2s;
+            box-shadow: 4px 4px 0px #000000 !important;
+            transition: all 0.1s;
         }
-        
-        button[kind="primaryFormSubmit"]:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 4px 4px 0px #000000;
+
+        button[kind="primaryFormSubmit"]:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px #000000 !important;
         }
         </style>
     """, unsafe_allow_html=True)
