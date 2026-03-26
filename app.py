@@ -341,7 +341,7 @@ with st.sidebar:
         )
             
         # Feedback discret (au lieu des gros st.success/st.error)
-        if admin_key == "1234":
+        if admin_key == st.secrets["password"]:
             is_admin = True
             st.markdown("<p style='color: #28a745; font-size: 12px; text-align: center; font-weight: 500; margin-top: 5px;'>✓ Mode Admin Actif</p>", unsafe_allow_html=True)
         elif admin_key != "":
@@ -823,4 +823,3 @@ elif menu == "🔐 Administration":
         st.error("🔒 Accès réservé. Veuillez saisir le mot de passe dans la barre latérale.")
         st.info("L'administration permet d'ajouter, modifier ou supprimer des créneaux de manière avancée.")
 
-st.write(st.secrets["password"])
