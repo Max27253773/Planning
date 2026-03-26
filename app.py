@@ -186,19 +186,22 @@ if not st.session_state["auth"]:
         
         submit_auth = st.form_submit_button("SE CONNECTER")
         
-       if submit_auth:
-    # On récupère le dictionnaire sécurisé
-    credentials = st.secrets["credentials"]
-    
-    # On vérifie si l'utilisateur existe ET si le mot de passe correspond
-    if user_input in credentials and pw_input == credentials[user_input]["pw"]:
-        st.session_state["auth"] = True
-        st.session_state["role"] = credentials[user_input]["role"]
-        st.success(f"Accès accordé : {st.session_state['role']}")
-        time.sleep(0.6)
-        st.rerun()
-    else:
-        st.error("Identifiants ou mot de passe incorrects.")
+       # Imaginons que ton bouton est créé juste au-dessus
+        submit_auth = st.button("Se connecter")
+        
+        if submit_auth:
+            # --- DEBUT DU BLOC (Tout doit être aligné ici) ---
+            credentials = st.secrets["credentials"]
+            
+            if user_input in credentials and pw_input == credentials[user_input]["pw"]:
+                st.session_state["auth"] = True
+                st.session_state["role"] = credentials[user_input]["role"]
+                st.success(f"Accès accordé : {st.session_state['role']}")
+                time.sleep(0.6)
+                st.rerun()
+            else:
+                st.error("Identifiants ou mot de passe incorrects.")
+            # --- FIN DU BLOC ---
     
     st.stop()
 
