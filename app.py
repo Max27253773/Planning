@@ -178,7 +178,7 @@ if not st.session_state["auth"]:
         </div>
     """, unsafe_allow_html=True)
     
-     with st.form("login_form"):
+    with st.form("login_form"):
         st.markdown("<h2 style='text-align: center; color: black; margin-top: 0; font-family: sans-serif; font-weight: 900;'>CONNEXION</h2>", unsafe_allow_html=True)
         
         user_input = st.text_input("IDENTIFIANT")
