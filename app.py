@@ -359,24 +359,26 @@ jours_fr_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
 choix_j_global = st.sidebar.selectbox("Jour", jours_fr_liste, index=min(maintenant.weekday(), 4) if annee_sel == maintenant.year else 0)
 local_sel = st.sidebar.selectbox("Local", list(LOCAL_CONFIG.keys()))
 
-# --- OPTIONS AFFICHAGE (DESIGN ÉPURÉ) ---
-st.sidebar.markdown("<br>", unsafe_allow_html=True) # Un peu d'espace avant
+# --- OPTIONS D'AFFICHAGE (STYLE MENU) ---
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-# Titre stylisé (plus petit et élégant que subheader)
+# Titre stylisé (plus élégant)
 st.sidebar.markdown("""
-    <p style='color: #888; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; margin-left: 5px;'>
-        📱 OPTIONS D'AFFICHAGE
-    </p>
+    <div style='display: flex; align-items: center; margin-left: 5px; margin-bottom: 8px;'>
+        <i class="bi bi-phone" style="font-size: 16px; color: #444; margin-right: 10px;"></i>
+        <span style="color: #444; font-size: 13px; font-weight: 600; font-family: sans-serif; letter-spacing: 0.5px;">
+            OPTIONS D'AFFICHAGE
+        </span>
+    </div>
 """, unsafe_allow_html=True)
 
-# Le contrôle segmenté
-# Note : On utilise label_visibility="collapsed" pour ne pas doubler le titre
+# Le contrôle segmenté (on utilise une clé unique pour le CSS)
 mode_vue = st.sidebar.segmented_control(
-    "Format", 
+    "vue_format", 
     ["Semaine", "Jour"], 
     default="Jour", 
-    label_visibility="collapsed"
-)
+    label_visibility="collapsed",
+    key="custom_segmented"
 
 # --- COPYRIGHT ET SIGNATURE ---
 st.sidebar.divider()
