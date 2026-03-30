@@ -187,7 +187,6 @@ if not st.session_state["auth"]:
         submit_auth = st.form_submit_button("SE CONNECTER")
         
         if submit_auth:
-            # On va chercher le dictionnaire [credentials] dans les secrets
             creds = st.secrets["credentials"]
     
             if user_input in creds and pw_input == creds[user_input]["pw"]:
