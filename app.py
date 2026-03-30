@@ -187,15 +187,12 @@ if not st.session_state["auth"]:
         submit_auth = st.form_submit_button("SE CONNECTER")
         
         if submit_auth:
-            # Identifiants
-            credentials = {
-                "UT": {"pw": "Azerty123*", "role": "Utilisateur"},
-                "ANIM": {"pw": "Anim2026*", "role": "Animateur"}
-            }
-            
-            if user_input in credentials and pw_input == credentials[user_input]["pw"]:
+            # On va chercher le dictionnaire [credentials] dans les secrets
+            creds = st.secrets["credentials"]
+    
+            if user_input in creds and pw_input == creds[user_input]["pw"]:
                 st.session_state["auth"] = True
-                st.session_state["role"] = credentials[user_input]["role"]
+                st.session_state["role"] = creds[user_input]["role"]
                 st.success(f"Accès accordé : {st.session_state['role']}")
                 time.sleep(0.6)
                 st.rerun()
