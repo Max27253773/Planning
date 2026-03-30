@@ -594,7 +594,7 @@ elif menu == "🔍 Rechercher":
             (df['Date_DT'].dt.isocalendar().week == semaine_sel) &
             (df['Date_DT'].dt.year == annee_sel)
         )
-        resultats = df[mask].sort_values(by=['Date_DT', 'Horaire', 'Equipe'])
+        resultats = df[mask].sort_values(by=['Date_DT', 'Horaire'])
 
         if not resultats.empty:
             st.success(f"Nombre de créneau(x) trouvé(s) : {len(resultats)}")
