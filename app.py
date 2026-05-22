@@ -228,7 +228,13 @@ st.markdown("""
 
 # --- 7. INTERFACE (DESIGN MODERNE) ---
 df = load_data()
-df['Date_DT'] = pd.to_datetime(df['Date_DT'], errors='coerce')
+if df is not null and not df.empty:
+    if 'Date_DT' in df.columns:
+        df['Date_DT'] = pd.to_datetime(df['Date_DT'], errors='coerce')
+    else:
+        st.error("La colonne 'Date_DT' est introuvable dans les données chargées.")
+else:
+    st.error("Impossible de charger les données. Vérifie la connexion Internet ou la source des données.")
 
 # --- 7.1. CONFIGURATION DU MENU ---
 opts = ["Planning", "Supervision", "Rechercher", "Stats"]
